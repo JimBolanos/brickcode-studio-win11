@@ -1,0 +1,97 @@
+BrickCode Studio - edicion para Windows (solo NQC)
+===================================================
+
+Todo lo necesario esta en esta carpeta. No hay instalador: descomprimes y usas.
+
+
+QUE NECESITAS ANTES
+-------------------
+
+  1) La TORRE INFRARROJA de LEGO.
+
+     El RCX y el Scout no tienen cable de datos. El ladrillo no trae
+     puerto USB. Todo - el programa, el firmware, el control remoto -
+     viaja por luz infrarroja, como el control de un televisor:
+
+         tu PC  --USB-->  torre IR  ))) infrarrojo (((  -->  RCX / Scout
+
+     Sin torre, este editor escribe y compila igual de bien, pero nada
+     llega nunca al ladrillo.
+
+     Torre USB    pieza x431c01, vino en los sets 3804, 9786 y 9794.
+                  Se alimenta del USB. ID 0694:0001. Es la de este
+                  paquete, y la que necesita el driver del paso 2.
+
+     Torre serial pieza 9713, conector DE-9, vino en 9719, 9785, 9790
+                  y 9793. Necesita una pila de 9 V. Si es la tuya, no
+                  hace falta driver ni Python: escribe su puerto (COM1,
+                  por ejemplo) en "Puerto de la torre" dentro de Ajustes
+                  y nqc se encarga de todo.
+
+  2) Python 3, desde la Microsoft Store (busca "Python 3.13" o mas
+     nuevo). Es lo unico que no se puede meter aqui dentro. Todo lo
+     demas ya viene: nqc, los firmwares, las librerias y el driver.
+
+
+PASOS
+-----
+
+  1. Conecta la torre USB infrarroja al computador.
+
+  2. Instala el driver de la torre:
+     abre la carpeta  driver\  y sigue  driver\LEEME-driver.txt
+     (es Zadig, tarda un minuto).
+
+  3. Doble clic en  BrickCodeStudio.exe
+
+  4. En el programa, boton "Probar herramientas".
+     Debe encontrar las cinco cosas: nqc.exe, python, rcx_tool.py,
+     libusb-1.0.dll y pyusb.
+
+  5. Enciende el RCX y apunta su ventanita infrarroja a la de la torre,
+     de frente, a unos 10 a 25 cm. Pulsa "Probar ladrillo".
+     Si responde, ya esta todo listo.
+
+     Si no responde: el infrarrojo es direccional y rebota en las
+     paredes. Que queden de frente, sin sol directo ni un fluorescente
+     justo encima, y con pilas nuevas en el ladrillo.
+
+  6. Si el RCX solo muestra un numero y no el muñequito corriendo,
+     le falta el firmware. En Ajustes -> Utilidades del ladrillo,
+     elige  firmware\firm0328.lgo  y pulsa "Enviar firmware".
+     Tarda entre 3 y 5 minutos. No muevas el RCX.
+
+  7. Escribe tu programa y pulsa F5.
+
+
+QUE HAY EN CADA CARPETA
+-----------------------
+
+  BrickCodeStudio.exe   el editor
+  nqc.exe               el compilador de NQC
+  rcx_tool.py           lo que habla con la torre USB
+  usb\                  pyusb, ya incluido (no hace falta pip)
+  libusb-1.0.dll        la libreria USB que usa rcx_tool
+  firmware\             firm0309 (RCX 1.0), firm0328 (RCX 2.0), firm0332
+  driver\               Zadig y las instrucciones del driver
+  examples\             programas NQC de ejemplo
+  licenses\             las licencias de cada pieza
+
+
+POR QUE HACE FALTA rcx_tool.py Y NO BASTA nqc
+---------------------------------------------
+
+  En Windows, nqc abre la torre por \\.\LEGOTOWER1, que es el driver
+  original de LEGO. Ese driver no existe firmado para Windows 10 ni 11
+  de 64 bits, asi que nqc por si solo no puede descargar al ladrillo.
+
+  Por eso aqui nqc se encarga solo de compilar, y rcx_tool.py lleva el
+  programa al ladrillo a traves del driver libusbK que instala Zadig.
+
+  Si tu torre es SERIAL (puerto COM) no necesitas nada de esto: escribe
+  el puerto (por ejemplo COM1) en "Puerto de la torre" dentro de Ajustes
+  y el programa usara nqc directamente para todo.
+
+
+  (c) 2026 Jim Bolaños - Licencia MIT
+  Proyecto independiente, sin afiliacion con el Grupo LEGO.

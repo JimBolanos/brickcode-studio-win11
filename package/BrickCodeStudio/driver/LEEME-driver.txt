@@ -1,0 +1,74 @@
+Driver de la torre USB infrarroja de LEGO
+=========================================
+
+  Esto es SOLO para la torre USB (pieza x431c01, ID 0694:0001).
+  Si tu torre es la serial (pieza 9713, conector DE-9), no necesitas
+  nada de esto: escribe su puerto COM en Ajustes y listo.
+
+Windows 10 y 11 no traen driver para la torre USB de LEGO, y el original
+de LEGO no existe firmado para 64 bits. La solucion es asignarle a la
+torre el driver libusbK, que si esta firmado, usando Zadig.
+
+Esto se hace UNA sola vez.
+
+
+PASOS
+-----
+
+  1. Conecta la torre USB al computador.
+
+  2. Clic derecho en  zadig-2.9.exe  ->  "Ejecutar como administrador".
+
+  3. En el menu de arriba:  Options  ->  List All Devices
+     (hay que marcarlo, si no la torre no aparece).
+
+  4. En la lista de arriba elige  "LEGO USB Tower".
+     Comprueba que debajo diga  USB ID:  0694  0001
+     Si no aparece, desconecta y vuelve a conectar la torre.
+
+  5. En la caja de la derecha, con las flechitas, elige  libusbK.
+
+  6. Pulsa  "Install Driver"  (o "Replace Driver" si ya habia uno).
+
+  7. Espera a que diga  "The driver was installed successfully".
+     Puede tardar medio minuto. Listo.
+
+
+COMPROBAR QUE QUEDO BIEN
+------------------------
+
+  Abre BrickCode Studio y pulsa "Probar herramientas", luego "Detectar"
+  en Ajustes. Si la torre responde, el driver esta bien puesto.
+
+  Tambien puedes comprobarlo en PowerShell:
+
+      pnputil /enum-devices /connected | Select-String -Context 2 "LEGO"
+
+
+AVISO IMPORTANTE
+----------------
+
+  Al poner libusbK, la torre deja de usar el driver por defecto. Eso
+  significa que BricxCC y  nqc -Susb  ya NO podran usarla.
+
+  No es un problema para este programa: BrickCode Studio envia los
+  programas con rcx_tool.py, que habla justamente por libusbK. nqc aqui
+  solo compila.
+
+  Si algun dia quieres volver atras, en el Administrador de dispositivos
+  puedes desinstalar el dispositivo y marcar "Eliminar el software de
+  controlador", y luego reconectar la torre.
+
+
+SOBRE ZADIG
+-----------
+
+  Zadig 2.9, de Pete Batard (Akeo). Licencia GPL v3.
+  Esta incluido aqui por comodidad; no lo hicimos nosotros.
+
+  Sitio          https://zadig.akeo.ie/
+  Codigo fuente  https://github.com/pbatard/libwdi
+  Licencia       ..\licenses\zadig-LICENSE-GPL-3.0.txt
+
+  La GPL v3 te da derecho a pedir el codigo fuente: esta en el enlace
+  de arriba, en el repositorio oficial del proyecto.

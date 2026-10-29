@@ -1,0 +1,17 @@
+# Build output (dist/BrickCodeStudio.exe is committed on purpose)
+obj/
+bin/
+*.pdb
+*.user
+*.suo
+
+# Python
+__pycache__/
+*.pyc
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -91,6 +91,11 @@ The way round it, the one
 [beckmx](https://github.com/beckmx/lego-tower-rcx) worked out, is to bind the
 tower to **libusbK** with Zadig and talk to it from Python. So in this build:
 
+- **Visual block editor** (**File → Block editor…**): drag blocks instead of typing.
+  It is one offline HTML file beside the exe, opened in your browser and pinned to
+  NQC, since this edition carries `nqc` and not `nbc`. Save there, open the `.nqc`
+  here. Programs keep their blocks inside, so you can open them again and keep building.
+
 - **nqc.exe compiles** — that part is untouched and works perfectly.
 - **`rcx_tool.py` carries the program to the brick** over libusbK.
 

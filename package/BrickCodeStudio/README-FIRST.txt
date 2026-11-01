@@ -39,6 +39,10 @@ STEPS
 
   1. Plug the USB IR tower into the computer.
 
+  Prefer dragging blocks to typing? File -> Block editor... opens
+  blocks\brickcode-blocks.html in your browser. Build the program
+  there, press Save, then open the .nqc file here.
+
   2. Install the tower driver:
      open  driver\  and follow  driver\README-driver.txt
      (it is Zadig, it takes a minute).

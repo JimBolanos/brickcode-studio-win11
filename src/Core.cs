@@ -96,6 +96,7 @@ namespace BrickCode
             A("Open…", "Abrir…");
             A("Save", "Guardar");
             A("Save as…", "Guardar como…");
+            A("Block editor…", "Editor de bloques…");
             A("New program", "Nuevo programa");
             A("Language", "Idioma");
             A("No brick connected", "Ningún ladrillo conectado");

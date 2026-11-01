@@ -461,8 +461,42 @@ namespace BrickCode
             AddItem(m, I18n.T("Save"), delegate { Save(false); });
             AddItem(m, I18n.T("Save as…"), delegate { Save(true); });
             m.Items.Add(new ToolStripSeparator());
+            AddItem(m, I18n.T("Block editor…"), delegate { OpenBlockEditor(); });
+            m.Items.Add(new ToolStripSeparator());
             AddItem(m, I18n.T("About"), delegate { new AboutForm(this).ShowDialog(this); });
             m.Show(chip, new Point(0, chip.Height + 2));
+        }
+
+        /* The block editor is a single self-contained HTML page that ships
+           beside the exe. It opens in the default browser rather than in an
+           embedded view: a WebView2 control would mean a runtime to install
+           on every machine, and this package is deliberately drop-and-run.
+
+           #nqc-only pins it to NQC and hides the language switch, because
+           this edition carries nqc and not nbc. */
+        void OpenBlockEditor()
+        {
+            string page = Path.Combine(Path.Combine(AppDir, "blocks"),
+                                       "brickcode-blocks.html");
+            if (!File.Exists(page))
+            {
+                Log(I18n.T("Block editor not found. It lives beside the exe, "
+                           + "in blocks\\brickcode-blocks.html."), Ui.P.LogErr, true);
+                return;
+            }
+            try
+            {
+                string uri = new Uri(page).AbsoluteUri + "#nqc-only";
+                ProcessStartInfo psi = new ProcessStartInfo(uri);
+                psi.UseShellExecute = true;        /* let Windows pick the browser */
+                Process.Start(psi);
+                Log(I18n.T("Block editor opened in your browser. Build the program "
+                           + "there, press Save, then open the file here."), Ui.P.LogInfo, false);
+            }
+            catch (Exception ex)
+            {
+                Log(ex.Message, Ui.P.LogErr, true);
+            }
         }
 
         static void AddItem(ContextMenuStrip m, string text, EventHandler h)

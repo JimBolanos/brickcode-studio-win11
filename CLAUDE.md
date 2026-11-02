@@ -5,8 +5,8 @@ Scout. **NQC only** — this package carries `nqc.exe` and no `nbc`, so there is
 no NXT and no NXC anywhere in it.
 
 The other edition, GTK4 and C, for Linux and macOS, lives in
-[brickcode-studio](https://github.com/JimBolanos/brickcode-studio) and does
-support the NXT.
+[brickcode-studio-osx-linux](https://github.com/JimBolanos/brickcode-studio-osx-linux)
+and does support the NXT.
 
 ## Build
 

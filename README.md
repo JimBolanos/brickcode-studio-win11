@@ -4,7 +4,7 @@ An NQC editor for the LEGO RCX and Scout, for **Windows 10 and 11**. Write a
 program, press **F5**, and it is compiled, downloaded and run on the brick. Every
 button on screen is an invocation of `nqc.exe`; there is nothing else in the middle.
 
-This is the Windows build of [BrickCode Studio](https://github.com/JimBolanos/brickcode-studio),
+This is the Windows build of [BrickCode Studio](https://github.com/JimBolanos/brickcode-studio-osx-linux),
 with the same interface and the same visual block editor, and NQC only — no NXC,
 no NXT. It carries everything it
 needs: the compiler, the RCX firmware files, the USB libraries and the tower driver.

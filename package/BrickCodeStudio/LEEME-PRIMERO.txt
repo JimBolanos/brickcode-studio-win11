@@ -64,10 +64,28 @@ PASOS
   7. Escribe tu programa y pulsa F5.
 
 
+SI PREFIERES ARRASTRAR BLOQUES EN LUGAR DE ESCRIBIR
+---------------------------------------------------
+
+  Archivo -> Editor de bloques...  abre  blocks\brickcode-blocks.html
+  en tu navegador. Arma el programa con los bloques, pulsa Guardar y
+  luego abre ese archivo .nqc aqui y pulsa F5 como siempre.
+
+  Funciona sin internet: el editor completo es ese unico archivo.
+
+  Escribe NQC y solo NQC, porque este paquete trae nqc y no nbc. Aqui
+  no hay NXT.
+
+  Los programas que guardes llevan los bloques dentro, en un comentario
+  al final, asi que puedes volver a abrir el mismo archivo en el editor
+  mas adelante y seguir armando en lugar de empezar de nuevo.
+
+
 QUE HAY EN CADA CARPETA
 -----------------------
 
   BrickCodeStudio.exe   el editor
+  blocks\               el editor de bloques, un solo archivo HTML
   nqc.exe               el compilador de NQC
   rcx_tool.py           lo que habla con la torre USB
   usb\                  pyusb, ya incluido (no hace falta pip)

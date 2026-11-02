@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-pin="nqc-only">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -4598,8 +4598,18 @@ return $.__chunk_javascript;
 
   // "...brickcode-blocks.html#nxc" opens straight into the NXT language.
   // BrickCode Studio uses this so the editor matches the switch in its toolbar.
+  //
+  // A copy of the page can also be built already pinned, with data-pin on
+  // <html>. That is what the Windows package ships. Windows opens the page
+  // through ShellExecute, which resolves a file: URL to a plain path before
+  // handing it to the browser and drops the fragment on the way, so a pin
+  // that travels inside the file is the only one sure to arrive.
+  function pin() {
+    var p = document.documentElement.getAttribute("data-pin");
+    return p ? "#" + p : String(location.hash || "");
+  }
   function wanted() {
-    var h = String(location.hash || "").replace(/^#/, "").toLowerCase();
+    var h = pin().replace(/^#/, "").toLowerCase();
     h = h.replace(/-only$/, "");
     return (h === "nxc" || h === "nxt") ? "nxc"
          : (h === "nqc" || h === "rcx") ? "nqc" : null;
@@ -4608,22 +4618,24 @@ return $.__chunk_javascript;
   // of the two languages should not offer the other: the program would be
   // unbuildable by the app that opened this page.
   function locked() {
-    return /-only$/.test(String(location.hash || "").toLowerCase());
+    return /-only$/.test(pin().toLowerCase());
   }
   loadExample();
-  (function () {
+  // Also run on hashchange, not only at load: changing the fragment of a page
+  // that is already open never re-runs this, and a locked() that said yes
+  // while the switch was still on screen would be a lie.
+  function applyPin() {
     var w = wanted();
     if (w) setMode(w);            // setMode returns at once if it matches
-    if (w && locked()) {
-      document.getElementById("seg").hidden = true;
+    var lock = !!w && locked();
+    document.getElementById("seg").hidden = lock;
+    if (lock) {
       document.getElementById("tag").textContent =
         "for the " + (w === "nqc" ? "RCX / Scout" : "NXT");
     }
-  })();
-  window.addEventListener("hashchange", function () {
-    var w = wanted();
-    if (w) setMode(w);
-  });
+  }
+  applyPin();
+  window.addEventListener("hashchange", applyPin);
   window.__ready = true;
   window.__nqc = function () { return lastCode; };
   window.__code = function () { return lastCode; };

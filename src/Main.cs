@@ -472,8 +472,13 @@ namespace BrickCode
            embedded view: a WebView2 control would mean a runtime to install
            on every machine, and this package is deliberately drop-and-run.
 
-           #nqc-only pins it to NQC and hides the language switch, because
-           this edition carries nqc and not nbc. */
+           The copy in this package is built pinned to NQC, so the switch to
+           the NXT language is not there at all: this edition carries nqc and
+           not nbc, and a program in a language it cannot compile would be a
+           dead end. The pin is an attribute inside the file rather than a
+           "#nqc-only" on the end of the address, because ShellExecute turns
+           a file: URL back into a plain path before the browser sees it and
+           loses everything after the "#" on the way. */
         void OpenBlockEditor()
         {
             string page = Path.Combine(Path.Combine(AppDir, "blocks"),
@@ -486,8 +491,7 @@ namespace BrickCode
             }
             try
             {
-                string uri = new Uri(page).AbsoluteUri + "#nqc-only";
-                ProcessStartInfo psi = new ProcessStartInfo(uri);
+                ProcessStartInfo psi = new ProcessStartInfo(page);
                 psi.UseShellExecute = true;        /* let Windows pick the browser */
                 Process.Start(psi);
                 Log(I18n.T("Block editor opened in your browser. Build the program "

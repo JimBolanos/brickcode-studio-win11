@@ -35,7 +35,7 @@ namespace BrickCode
     static class App
     {
         public const string Name = "BrickCode Studio";
-        public const string Version = "2.1.2";
+        public const string Version = "2.2.0";
         public const string Author = "Jim Bolanos";
         public const string Github = "https://github.com/JimBolanos";
         public const string GithubShort = "github.com/JimBolanos";

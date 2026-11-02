@@ -4,6 +4,27 @@ Versions before 2.1.1 were released as
 [rcx-tower-gui](https://github.com/JimBolanos/rcx-tower-gui), under the name
 RCX Tower GUI. They are kept here for the record.
 
+## 2.2.0 — blocks, for people who do not type yet
+
+- **Visual block editor**, under **File → Block editor…**. Drag blocks together and
+  it writes the NQC; save there, open the `.nqc` here, press F5 as always. It is a
+  single HTML file in `blocks\` beside the exe, it needs no internet, and it opens in
+  whatever browser the machine already has — rather than an embedded view, which
+  would have meant a WebView2 runtime to install on every machine and this package
+  is meant to be drop-and-run.
+- The copy that ships here is **built pinned to NQC**: the switch to the NXT language
+  is not in it. This edition carries `nqc` and not `nbc`, so NXC would only let
+  someone build a program the app in front of them cannot compile. The pin is an
+  attribute inside the file rather than a `#nqc-only` on the end of the address,
+  because ShellExecute turns a `file:` URL back into a plain path before the browser
+  sees it and loses the fragment on the way.
+- Saved programs keep their blocks inside, in a comment at the end of the file, so
+  the same `.nqc` can be opened in the editor again later and carried on. The
+  comment does not change what `nqc` produces: the compiled `.rcx` is byte for byte
+  the same with it and without it.
+- `LEEME-PRIMERO.txt` and `README.es.md` describe the editor too — in 2.1.2 only the
+  English ones did.
+
 ## 2.1.2 — the package carries everything
 
 - `package/BrickCodeStudio` is a ready-to-run folder: the editor, `nqc.exe`, the

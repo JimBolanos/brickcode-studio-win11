@@ -39,10 +39,6 @@ STEPS
 
   1. Plug the USB IR tower into the computer.
 
-  Prefer dragging blocks to typing? File -> Block editor... opens
-  blocks\brickcode-blocks.html in your browser. Build the program
-  there, press Save, then open the .nqc file here.
-
   2. Install the tower driver:
      open  driver\  and follow  driver\README-driver.txt
      (it is Zadig, it takes a minute).
@@ -69,10 +65,28 @@ STEPS
   7. Write your program and press F5.
 
 
+IF YOU WOULD RATHER DRAG BLOCKS THAN TYPE
+-----------------------------------------
+
+  File -> Block editor...  opens  blocks\brickcode-blocks.html  in your
+  browser. Drag the blocks together, press Save, then open that .nqc
+  file here and press F5 as usual.
+
+  It works with no internet: the whole editor is that one file.
+
+  It writes NQC and only NQC, because this package carries nqc and not
+  nbc. There is no NXT here.
+
+  Saved programs keep their blocks inside, in a comment at the end, so
+  you can open the same file in the editor again later and carry on
+  building instead of starting over.
+
+
 WHAT IS IN HERE
 ---------------
 
   BrickCodeStudio.exe   the editor
+  blocks\               the visual block editor, one offline HTML file
   nqc.exe               the NQC compiler
   rcx_tool.py           what talks to the USB tower
   usb\                  pyusb, already bundled (no pip needed)

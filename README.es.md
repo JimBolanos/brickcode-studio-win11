@@ -5,13 +5,21 @@ programa, pulsa **F5**, y se compila, se descarga y se ejecuta en el ladrillo. C
 botón de la ventana es una llamada a `nqc.exe`; no hay nada más en medio.
 
 Esta es la versión para Windows de [BrickCode Studio](https://github.com/JimBolanos/brickcode-studio),
-con la misma interfaz y solo NQC — sin NXC ni NXT. Trae todo lo que necesita: el
-compilador, los firmwares del RCX, las librerías USB y el driver de la torre.
+con la misma interfaz y el mismo editor visual de bloques, y solo NQC — sin NXC ni
+NXT. Trae todo lo que necesita: el compilador, los firmwares del RCX, las librerías
+USB y el driver de la torre.
 
 > Continúa a [rcx-tower-gui](https://github.com/JimBolanos/rcx-tower-gui), la versión
 > anterior de la misma idea.
 
 ![BrickCode Studio en Windows](docs/screenshot-nqc-en.png)
+
+¿Prefieres arrastrar bloques a escribir? **Archivo → Editor de bloques…** lo abre en
+tu navegador. Escribe el NQC por ti, y en esta edición viene fijado a NQC: el paquete
+trae `nqc` y no `nbc`, así que ofrecer NXC aquí solo serviría para armar programas que
+esta app no puede compilar.
+
+![El editor visual de bloques, escribiendo NQC](docs/screenshot-blocks-en.png)
 
 ---
 
@@ -90,6 +98,12 @@ al ladrillo en un Windows moderno**, hagas lo que hagas.
 La salida, la que encontró [beckmx](https://github.com/beckmx/lego-tower-rcx), es
 asignarle a la torre el driver **libusbK** con Zadig y hablarle desde Python. Por eso
 en esta versión:
+
+- **Editor visual de bloques** (**Archivo → Editor de bloques…**): arrastra bloques
+  en lugar de escribir. Es un solo archivo HTML, sin internet, que vive junto al exe,
+  se abre en tu navegador y viene fijado a NQC, porque esta edición trae `nqc` y no
+  `nbc`. Guardas ahí, abres el `.nqc` aquí. Los programas llevan sus bloques dentro,
+  así que puedes volver a abrirlos y seguir armando.
 
 - **nqc.exe compila** — esa parte está intacta y funciona perfecto.
 - **`rcx_tool.py` lleva el programa al ladrillo** a través de libusbK.

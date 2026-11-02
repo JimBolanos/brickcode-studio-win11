@@ -203,7 +203,7 @@
     <span class="brandname">BrickCode Studio</span>
   </div>
   <div class="title" id="title">NQC Blocks</div>
-  <div class="tag" id="tag">mock-up &middot; RCX / Scout</div>
+  <div class="tag" id="tag">for the RCX / Scout</div>
 
   <div class="modal" id="nameModal" hidden>
     <div class="sheet">
@@ -4164,9 +4164,9 @@ return $.__chunk_javascript;
 
   var MODES = {
     nqc: { gen: nqc, cats: CATS, lang: "NQC", ext: "nqc", example: EXAMPLE,
-           title: "NQC Blocks", tag: "mock-up \u00b7 RCX / Scout" },
+           title: "NQC Blocks", tag: "for the RCX / Scout" },
     nxc: { gen: nxc, cats: CATS_NXC, lang: "NXC", ext: "nxc", example: EXAMPLE_NXC,
-           title: "NXC Blocks", tag: "mock-up \u00b7 NXT" }
+           title: "NXC Blocks", tag: "for the NXT" }
   };
   var mode = "nqc";
 
@@ -4617,7 +4617,7 @@ return $.__chunk_javascript;
     if (w && locked()) {
       document.getElementById("seg").hidden = true;
       document.getElementById("tag").textContent =
-        "mock-up \u00b7 " + (w === "nqc" ? "RCX / Scout" : "NXT");
+        "for the " + (w === "nqc" ? "RCX / Scout" : "NXT");
     }
   })();
   window.addEventListener("hashchange", function () {

@@ -5,13 +5,21 @@ program, press **F5**, and it is compiled, downloaded and run on the brick. Ever
 button on screen is an invocation of `nqc.exe`; there is nothing else in the middle.
 
 This is the Windows build of [BrickCode Studio](https://github.com/JimBolanos/brickcode-studio),
-with the same interface, and NQC only — no NXC, no NXT. It carries everything it
+with the same interface and the same visual block editor, and NQC only — no NXC,
+no NXT. It carries everything it
 needs: the compiler, the RCX firmware files, the USB libraries and the tower driver.
 
 > Continues from [rcx-tower-gui](https://github.com/JimBolanos/rcx-tower-gui), the
 > earlier version of the same idea.
 
 ![BrickCode Studio on Windows](docs/screenshot-nqc-en.png)
+
+Prefer dragging blocks to typing? **File → Block editor…** opens it in your
+browser. It writes the NQC for you, and this edition pins it to NQC — the package
+carries `nqc` and not `nbc`, so offering NXC here would only build programs this
+app cannot compile.
+
+![The visual block editor, writing NQC](docs/screenshot-blocks-en.png)
 
 ---
 

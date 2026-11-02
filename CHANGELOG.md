@@ -52,7 +52,7 @@ RCX Tower GUI. They are kept here for the record.
 ## 2.1.1 — BrickCode Studio, Windows edition
 
 Rebuilt as the Windows edition of
-[BrickCode Studio](https://github.com/JimBolanos/brickcode-studio-osx-linux), NQC only.
+[BrickCode Studio](https://github.com/JimBolanos/brickcode-studio-apple-linux), NQC only.
 
 - The whole interface redrawn to match BrickCode Studio: top bar with the file chip,
   mode, language, brick status and the Cancel / Download / Run buttons; left sidebar

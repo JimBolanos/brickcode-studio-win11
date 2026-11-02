@@ -195,6 +195,19 @@ install. The sources are five files under `src/`:
 The icon is drawn in code with GDI+, ported from the cairo original, so it is the
 same brick at every size.
 
+`build.bat` also refreshes `package\BrickCodeStudio\BrickCodeStudio.exe`, the copy
+inside the ready-to-run folder. 2.1.2 shipped with that copy a build behind its own
+sources, so now it cannot drift.
+
+To build the zip that goes on a release:
+
+```
+package.bat
+```
+
+It zips `package\BrickCodeStudio` whole, and refuses to do it if any file under
+`src\` is newer than the packaged exe.
+
 ## About
 
 ![About](docs/screenshot-about-en.png)

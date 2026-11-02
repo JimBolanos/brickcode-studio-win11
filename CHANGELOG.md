@@ -24,6 +24,11 @@ RCX Tower GUI. They are kept here for the record.
   the same with it and without it.
 - `LEEME-PRIMERO.txt` and `README.es.md` describe the editor too — in 2.1.2 only the
   English ones did.
+- `build.bat` now refreshes the exe inside `package\BrickCodeStudio` as well, and a
+  new `package.bat` builds the release zip and refuses to build it from an exe older
+  than anything under `src\`. 2.1.2 shipped with that packaged exe one build behind
+  its own sources, which is not the sort of thing anyone notices until someone asks
+  why a menu entry is not there.
 
 ## 2.1.2 — the package carries everything
 

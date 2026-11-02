@@ -2,6 +2,11 @@
 obj/
 bin/
 *.pdb
+
+# The release zip that package.bat builds. It is made of what is already in
+# here, and git is no place for an 8 MB blob that changes on every build: it
+# belongs on the GitHub release, not in the history.
+BrickCodeStudio-Windows-completo.zip
 *.user
 *.suo
 

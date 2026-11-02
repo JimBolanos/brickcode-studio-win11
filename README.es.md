@@ -197,6 +197,19 @@ instalar. El código son cinco archivos en `src/`:
 El icono se dibuja por código con GDI+, portado del original en cairo, así que es el
 mismo ladrillo en todos los tamaños.
 
+`build.bat` también refresca `package\BrickCodeStudio\BrickCodeStudio.exe`, la copia
+que va dentro de la carpeta lista para usar. La 2.1.2 salió con esa copia una
+compilación por detrás de su propio código; ahora ya no se puede desfasar.
+
+Para armar el zip que va en un release:
+
+```
+package.bat
+```
+
+Comprime `package\BrickCodeStudio` completa, y se niega a hacerlo si algún archivo de
+`src\` es más nuevo que el exe empaquetado.
+
 ## Acerca de
 
 ![Acerca de](docs/screenshot-about-en.png)

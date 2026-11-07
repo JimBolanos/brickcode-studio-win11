@@ -366,8 +366,8 @@ namespace BrickCode
             {
                 editor.Code = IsNxt ? App.SampleNxt : App.Sample;
                 dirty = false;
-                UpdateChip();
             }
+            UpdateChip();
             side.Bricks[0].DotLevel = 0;
             side.Bricks[1].DotLevel = 0;
             brickKey = "No brick connected";
@@ -379,6 +379,7 @@ namespace BrickCode
 
         void UpdateChip()
         {
+            chip.Badge = IsNxt ? "NXC" : "NQC";
             chip.FileName = filePath == null
                 ? I18n.T("untitled")
                 : Path.GetFileName(filePath);
@@ -645,7 +646,7 @@ namespace BrickCode
             }
             try
             {
-                File.WriteAllText(filePath, editor.Code, Encoding.UTF8);
+                File.WriteAllText(filePath, editor.Code, new UTF8Encoding(false)); // no BOM: nbc chokes on it
                 dirty = false;
                 UpdateChip();
                 return true;

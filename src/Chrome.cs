@@ -29,6 +29,8 @@ namespace BrickCode
             Cursor = Cursors.Hand;
         }
 
+        public string Badge = "NQC";
+
         protected override void OnMouseEnter(EventArgs e) { hover = true; Invalidate(); base.OnMouseEnter(e); }
         protected override void OnMouseLeave(EventArgs e) { hover = false; Invalidate(); base.OnMouseLeave(e); }
 
@@ -57,7 +59,7 @@ namespace BrickCode
             // NQC badge
             Rectangle badge = new Rectangle(9, (Height - 22) / 2, 36, 22);
             Dr.Fill(g, badge, 6, Ui.P.Blue);
-            Dr.TextCenter(g, "NQC", Ui.B(8f), Color.White, badge);
+            Dr.TextCenter(g, Badge, Ui.B(8f), Color.White, badge);
 
             // file name
             string name = FileName + (Dirty ? " •" : "");

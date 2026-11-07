@@ -108,6 +108,15 @@ USING AN NXT
   WinUSB. NXT-G and the LEGO software need their own driver, so do NOT
   replace it on a PC where you still use them.
 
+  Tools for the NXT (side bar, or Settings):
+    NXT Explorer  name, firmware, battery, the files on the NXT; send,
+                  run and delete programs.
+    NXT Screen    the NXT display live, with its four buttons (mouse, or
+                  the arrows, Enter and Esc). It uses the USB link, so
+                  close it before compiling, and close the Explorer too.
+  If a command says "operation not supported": unplug the NXT, plug it
+  in again (same port) and retry.
+
   Test the whole chain first with  test-nxt.bat  (it uses nxt-test\).
   The NXT must have firmware 1.28 or newer; 1.31 is the one tested.
 

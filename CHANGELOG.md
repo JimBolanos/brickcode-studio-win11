@@ -14,6 +14,16 @@ RCX Tower GUI. They are kept here for the record.
   IR messages, colour / light / sound, Bluetooth and "set movement motors" blocks.
 - **File → Pybricks block editor (EV3)…** opens the EV3 editor. The program is run from
   the Pybricks editor; this app sends nothing to the EV3.
+- **NXT Explorer**: name, firmware, battery and free memory, the files on the brick, and
+  Run, Send file… and Delete. **NXT Screen**: the NXT display live over USB, drawn as the
+  brick, with clickable buttons and the keyboard (arrows, Enter, Esc). **VLL** window: the
+  Scout sends VLL codes to a Micro Scout (`rcx_tool.py vll`). The side bar shows the tools
+  of the selected brick only.
+- In NXT mode the Settings panel drops the RCX / Scout utilities, the program slot and the
+  nqc command line, and offers NXT utilities instead; the file chip says NXC; choosing NXT
+  checks the brick at once.
+- Files are saved **without a BOM**: nbc rejected it (`';' expected` on line 3).
+- A USB error "operation not supported" now says to unplug and replug the NXT.
 - `test-nxt.bat` tests the whole NXT chain without the GUI.
 - `nbc.exe` bundled (MPL 1.1, unchanged); the NXT-only block page is no longer left out.
 

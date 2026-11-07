@@ -24,6 +24,7 @@ Usage:
     python rcx_tool.py battery           - Battery level
     python rcx_tool.py datalog [COUNT]   - Upload the datalog
     python rcx_tool.py remote HEX        - Send an IR remote command (e.g. 0800)
+    python rcx_tool.py vll CODE [TOGGLE]  - Scout: send a VLL code to a Micro Scout
 
 Opcodes follow the nqc source (rcxlib/RCX_Constants.h).
 """
@@ -654,6 +655,15 @@ class RCXComm:
         print(f"  Remote command {value:04X} sent.")
         return True
 
+    def vll(self, code, toggle=0):
+        """Scout -> Micro Scout. Opcode 0xE2 (0xEA on every second send), source 2
+        (a constant), then the VLL code. The codes are BricxCC's MSVLL_* values."""
+        op = 0xE2 | (0x08 if int(toggle) else 0)
+        # send_noreply ORs in its own toggle bit, which starts at 0 in a new process
+        self.send_noreply(op, bytes([0x02, int(code) & 0xFF]))
+        print(f"  VLL code {int(code)} sent.")
+        return True
+
     def datalog(self, count=None):
         """Entry 0 holds the number of entries, so read it first."""
         head = self.send(OP_UPLOAD_DATALOG, b"\x00\x00\x01\x00", timeout=4000)
@@ -734,6 +744,10 @@ def main():
         if arg(2) is None:
             print("Usage: rcx_tool.py sleep <minutes>"); sys.exit(1)
         ok = rcx.auto_off(arg(2))
+    elif cmd == "vll":
+        if arg(2) is None:
+            print("Usage: rcx_tool.py vll <code> [toggle]   e.g. 0 (motor forward)"); sys.exit(1)
+        ok = rcx.vll(arg(2), arg(3, 0))
     elif cmd == "datalog":
         ok = rcx.datalog(arg(2))
     elif cmd == "remote":

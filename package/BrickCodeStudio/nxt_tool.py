@@ -17,6 +17,12 @@ Usage:
     python nxt_tool.py stop                 - Stop the program, motors off
     python nxt_tool.py list                 - Files on the NXT
     python nxt_tool.py beep                 - A short beep (is the link alive?)
+    python nxt_tool.py files                - Files on the NXT, one "name<TAB>size" per line
+    python nxt_tool.py delete NAME          - Delete a file on the NXT
+    python nxt_tool.py screen               - Stream the NXT display (for the app):
+                                              prints "FRAME <1600 hex digits>" twice a second;
+                                              reads "press N" / "release N" (1 left, 2 enter,
+                                              3 right, 4 exit) and "quit" on stdin
 
 Exit code 0 = success, 1 = failure. Messages are printed in English.
 """
@@ -51,7 +57,17 @@ SYS_DELETE       = 0x85
 SYS_FIND_FIRST   = 0x86
 SYS_FIND_NEXT    = 0x87
 SYS_GET_FIRMWARE = 0x88
+SYS_READ_IOMAP   = 0x94
+SYS_WRITE_IOMAP  = 0x95
 SYS_GET_DEVINFO  = 0x9B
+
+# The display and the buttons live in the firmware's modules (IOMap).
+MOD_DISPLAY      = 0x000A0001
+MOD_UI           = 0x000C0001
+DISPLAY_NORMAL   = 119          # start of the normal screen inside the display module
+SCREEN_BYTES     = 800          # 8 rows of 100 bytes, bit i = line row*8+i
+SCREEN_CHUNK     = 50
+UI_OFF_BUTTON    = 28
 
 STATUS = {
     0x00: "success",
@@ -94,6 +110,22 @@ STATUS = {
 }
 
 
+def friendly(err):
+    """libusb's own messages say nothing useful to a person."""
+    text = str(err)
+    low = text.lower()
+    if "not supported" in low or "not implemented" in low or "errno 78" in low:
+        return ("%s -- the USB link to the NXT is in a bad state. Unplug the NXT, "
+                "plug it in again (same USB port) and try again." % text)
+    if "access denied" in low or "errno 13" in low or "busy" in low:
+        return ("%s -- another program has the NXT open (NXT-G, NXT-Scratch, the "
+                "NXT Explorer or Screen window). Close it and try again." % text)
+    if "timeout" in low or "errno 110" in low:
+        return ("%s -- the NXT did not answer. Check that it is on and the cable is in; "
+                "if it does not help, unplug it and plug it in again." % text)
+    return text
+
+
 def status_text(code):
     return "0x%02X %s" % (code, STATUS.get(code, "unknown status"))
 
@@ -132,7 +164,7 @@ class UsbTransport:
             usb.util.claim_interface(self.dev, 0)
         except usb.core.USBError as e:
             raise RuntimeError("Cannot open the NXT (%s). Another program may be using it, "
-                               "or the libusbK driver is not installed for it." % e)
+                               "or the USB driver is not installed for it." % friendly(e))
 
     def transact(self, req, reply_len=64):
         self.dev.write(EP_OUT, bytes(req), TIMEOUT_MS)
@@ -172,7 +204,7 @@ class NXT:
             rep = self.t.transact(req)
         except Exception as e:
             if not quiet_fail:
-                print("  [USB] %s" % e)
+                print("  [USB] %s" % friendly(e))
             return None
         return rep if len(rep) >= 3 else None
 
@@ -234,6 +266,36 @@ class NXT:
             r = self.system(SYS_FIND_NEXT, bytes([handle]))
         return files
 
+    def delete(self, name):
+        r = self.system(SYS_DELETE, pack_name(name))
+        if r is None:
+            return False
+        if r[2] != 0:
+            print("  [FAIL] Could not delete %s: %s" % (name, status_text(r[2])))
+            return False
+        return True
+
+    def read_screen(self):
+        """The 100 x 64 display as 800 bytes, or None if the NXT stopped answering."""
+        buf = bytearray()
+        for i in range(SCREEN_BYTES // SCREEN_CHUNK):
+            off = DISPLAY_NORMAL + i * SCREEN_CHUNK
+            req = (bytes([CMD_SYSTEM_REPLY, SYS_READ_IOMAP]) + MOD_DISPLAY.to_bytes(4, "little")
+                   + off.to_bytes(2, "little") + SCREEN_CHUNK.to_bytes(2, "little"))
+            r = self.send(req, quiet_fail=True)
+            if r is None or r[2] != 0 or len(r) < 9 + SCREEN_CHUNK:
+                return None
+            buf += r[9:9 + SCREEN_CHUNK]
+        return bytes(buf)
+
+    def press(self, value):
+        """On-screen button: 1 left, 2 enter, 3 right, 4 exit pressed; add 8 to release."""
+        req = (bytes([CMD_SYSTEM_REPLY, SYS_WRITE_IOMAP]) + MOD_UI.to_bytes(4, "little")
+               + UI_OFF_BUTTON.to_bytes(2, "little") + (1).to_bytes(2, "little")
+               + bytes([value]))
+        r = self.send(req, quiet_fail=True)
+        return bool(r and r[2] == 0)
+
     def upload(self, name, data, run=False):
         size = len(data)
         # A program from an earlier run may still hold the motors: stop it first.
@@ -283,6 +345,59 @@ class NXT:
         return True
 
 
+# --- the live screen --------------------------------------------------
+def cmd_screen(nxt, inp=None, out=None, interval=0.5, max_frames=None):
+    """Stream the display. One line per frame: FRAME <hex>. Commands arrive on
+    stdin, one per line: press N, release N, quit. Returns 0 on a clean quit."""
+    import threading
+    inp = sys.stdin if inp is None else inp
+    out = sys.stdout if out is None else out
+    cmds = []
+    lock = threading.Lock()
+
+    def reader():
+        for line in inp:
+            with lock:
+                cmds.append(line.strip().lower())
+            if line.strip().lower() == "quit":
+                return
+        with lock:
+            cmds.append("quit")             # stdin closed: the app is gone
+
+    th = threading.Thread(target=reader)
+    th.daemon = True
+    th.start()
+    frames = 0
+    next_frame = 0.0
+    while True:
+        with lock:
+            todo, cmds[:] = list(cmds), []
+        for c in todo:
+            if c == "quit":
+                return 0
+            parts = c.split()
+            if len(parts) == 2 and parts[0] in ("press", "release") and parts[1] in "1234":
+                v = int(parts[1]) + (8 if parts[0] == "release" else 0)
+                if not nxt.press(v):
+                    out.write("ERROR The NXT did not accept the button.\n")
+                    out.flush()
+                next_frame = 0.0            # show the result at once
+        now = time.time()
+        if now >= next_frame:
+            data = nxt.read_screen()
+            if data is None:
+                out.write("ERROR Lost connection to the NXT.\n")
+                out.flush()
+                return 1
+            out.write("FRAME " + data.hex() + "\n")
+            out.flush()
+            frames += 1
+            if max_frames is not None and frames >= max_frames:
+                return 0
+            next_frame = now + interval
+        nxt.sleep(0.02)
+
+
 # --- command line -----------------------------------------------------
 def cmd_probe(nxt, full=False):
     name, free = nxt.device_info()
@@ -306,12 +421,16 @@ def main(argv=None, transport=None):
         print(__doc__)
         return 1
     cmd = argv[1].lower()
-    if cmd not in ("probe", "info", "upload", "run", "stop", "list", "beep"):
+    if cmd not in ("probe", "info", "upload", "run", "stop", "list", "beep",
+                   "files", "delete", "screen"):
         print("Unknown: %s" % cmd)
         print(__doc__)
         return 1
     if cmd == "upload" and len(argv) < 3:
         print("Usage: nxt_tool.py upload <file.rxe> [run]")
+        return 1
+    if cmd == "delete" and len(argv) < 3:
+        print("Usage: nxt_tool.py delete <name>")
         return 1
     if cmd == "run" and len(argv) < 3:
         print("Usage: nxt_tool.py run <name>")
@@ -321,7 +440,7 @@ def main(argv=None, transport=None):
     try:
         t = transport or UsbTransport()
     except Exception as e:
-        print("[ERROR] %s" % e)
+        print("[ERROR] %s" % friendly(e))
         return 1
     nxt = NXT(t)
     ok = True
@@ -339,6 +458,15 @@ def main(argv=None, transport=None):
             for n, s in files:
                 print("  %-24s %8d bytes" % (n, s))
             print("  %d file(s)." % len(files))
+        elif cmd == "files":
+            for n, sz in nxt.list_files():
+                print("%s\t%d" % (n, sz))
+        elif cmd == "delete":
+            ok = nxt.delete(argv[2])
+            if ok:
+                print("  [OK] Deleted %s." % argv[2])
+        elif cmd == "screen":
+            return cmd_screen(nxt)
         elif cmd == "run":
             name = argv[2]
             if "." not in name:

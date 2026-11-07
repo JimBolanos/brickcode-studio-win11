@@ -191,11 +191,6 @@ namespace BrickCode
             side.Bricks.Add(new SideItem { Id = "tower", Label = "RCX tower", IsDot = true, DotLevel = 0 });
             side.Bricks.Add(new SideItem { Id = "nxt", Label = "NXT", IsDot = true, DotLevel = 0 });
             side.Bricks.Add(new SideItem { Id = "ev3", Label = "EV3 (Pybricks)", Swatch = Color.FromArgb(114, 67, 190) });
-            side.Tools.Add(new SideItem { Id = "remote", Label = "Remote" });
-            side.Tools.Add(new SideItem { Id = "datalog", Label = "Datalog" });
-            side.Tools.Add(new SideItem { Id = "firmware", Label = "Firmware…" });
-            side.Tools.Add(new SideItem { Id = "testbrick", Label = "Test brick" });
-            side.Tools.Add(new SideItem { Id = "testtools", Label = "Test tools" });
             side.Settings = new SideItem { Id = "settings", Label = "Settings" };
             side.ItemClicked += delegate(object s, SideEventArgs e) { SideAction(e.Id); };
 
@@ -246,6 +241,10 @@ namespace BrickCode
             settings.BtnApply.Click += delegate { ApplyShutoff(); };
             settings.BtnTestTools.Click += delegate { CheckTools(); };
             settings.BtnTestBrick.Click += delegate { TestBrick(); };
+            settings.BtnNxtTest.Click += delegate { TestBrick(); };
+            settings.BtnNxtExplorer.Click += delegate { SideAction("explorer"); };
+            settings.BtnNxtScreen.Click += delegate { SideAction("screen"); };
+            settings.BtnNxtStop.Click += delegate { Brick("clear", null, 15000, "Running command…"); };
             settings.BtnRemote.Click += delegate { OpenRemote(); };
             settings.BtnFirmwareDlg.Click += delegate { PickFirmware(); };
             settings.BtnCmdRun.Click += delegate { RunFreeCommand(); };
@@ -317,14 +316,6 @@ namespace BrickCode
             side.Bricks[0].Label = I18n.T("RCX tower");
             side.Bricks[1].Label = I18n.T("NXT");
             side.Bricks[2].Label = I18n.T("EV3 (Pybricks)");
-            string[] toolIds = { "remote", "datalog", "firmware", "testbrick", "testtools" };
-            string[] toolNames = { "Remote", "Datalog", "Firmware…", "Test brick", "Test tools" };
-            Color[] toolColors = { Ui.P.Yellow, Ui.P.Red, Ui.P.Muted, Ui.P.Green, Ui.P.Blue };
-            for (int i = 0; i < side.Tools.Count && i < toolIds.Length; i++)
-            {
-                side.Tools[i].Label = I18n.T(toolNames[i]);
-                side.Tools[i].Swatch = toolColors[i];
-            }
             side.Settings.Label = I18n.T("Settings");
             side.Settings.Swatch = Ui.P.Muted;
 
@@ -347,8 +338,38 @@ namespace BrickCode
             Invalidate(true);
         }
 
+        /// The tools that make sense for the brick that is selected.
+        void RebuildTools()
+        {
+            side.Tools.Clear();
+            if (IsNxt)
+            {
+                AddTool("explorer", "NXT Explorer", Ui.P.Magenta);
+                AddTool("screen", "NXT Screen", Ui.P.Yellow);
+            }
+            else
+            {
+                AddTool("remote", "Remote", Ui.P.Yellow);
+                AddTool("datalog", "Datalog", Ui.P.Red);
+                AddTool("vll", "VLL", Ui.P.Magenta);
+                AddTool("firmware", "Firmware…", Ui.P.Muted);
+            }
+            AddTool("testbrick", "Test brick", Ui.P.Green);
+            AddTool("testtools", "Test tools", Ui.P.Blue);
+            side.Invalidate();
+        }
+
+        void AddTool(string id, string label, Color swatch)
+        {
+            side.Tools.Add(new SideItem { Id = id, Label = I18n.T(label), Swatch = swatch });
+        }
+
         void UpdateMode()
         {
+            RebuildTools();
+            settings.NxtMode = IsNxt;
+            if (IsHandleCreated) Relayout();
+            settings.Invalidate(true);
             tb.ModeText = IsNxt ? "NXC  ·  NXT" : "NQC  ·  RCX / Scout";
             status.RightText = IsNxt
                 ? I18n.T("NXC for the NXT  ·  compiled by nbc, sent over USB")
@@ -370,6 +391,9 @@ namespace BrickCode
             UpdateChip();
             side.Bricks[0].DotLevel = 0;
             side.Bricks[1].DotLevel = 0;
+            // Choosing the NXT checks that it is there, so the dot is honest at once.
+            if (IsNxt && IsHandleCreated && Visible)
+                BeginInvoke(new MethodInvoker(delegate { if (IsNxt) TestBrick(); }));
             brickKey = "No brick connected";
             tb.StatusLevel = 0;
             tb.StatusText = I18n.T(brickKey);
@@ -692,11 +716,14 @@ namespace BrickCode
                     DetectPort();
                     break;
                 case "nxt":
-                    if (!IsNxt) SelectTarget("NXT");
-                    TestBrick();
+                    if (IsNxt) TestBrick();          // already NXT: ask again
+                    else SelectTarget("NXT");        // switching asks by itself
                     break;
                 case "ev3": OpenPybricksEditor(); break;
                 case "remote": OpenRemote(); break;
+                case "vll": new VllForm(this).Show(this); break;
+                case "explorer": new NxtExplorerForm(this).Show(this); break;
+                case "screen": new NxtScreenForm(this).Show(this); break;
                 case "datalog": Brick("datalog", null, 60000, "Running command…"); break;
                 case "firmware": PickFirmware(); break;
                 case "testbrick": TestBrick(); break;
@@ -1164,6 +1191,64 @@ namespace BrickCode
             for (int i = 0; i < args.Length; i++)
                 if (args[i] != null) s.Args.Add(args[i]);
             return s;
+        }
+
+        bool vllToggle;
+
+        /// Scout -> Micro Scout: opcode E2 (EA on every second send), source 02, the code.
+        public void RunVll(int code)
+        {
+            string op = vllToggle ? "EA" : "E2";
+            string msg = op + "02" + code.ToString("X2");
+            List<Step> steps = new List<Step>();
+            if (SerialTower())
+            {
+                Step s = NqcStep("-raw1", msg);
+                s.Args[0] = "-TScout";
+                s.Silent = true;
+                s.Timeout = 15000;
+                steps.Add(s);
+            }
+            else
+            {
+                Step s = ToolStep(15000, "vll", code.ToString(), vllToggle ? "1" : "0");
+                s.Silent = true;
+                steps.Add(s);
+            }
+            vllToggle = !vllToggle;
+            RunSteps(steps, "Sending VLL code…");
+        }
+
+        /// A ready-to-start python process for nxt_tool.py (or rcx_tool.py), for the
+        /// windows that run their own commands. Null, with a message, if python or
+        /// the tool is missing.
+        public ProcessStartInfo ToolPsi(bool nxt, bool redirectIn, string[] args)
+        {
+            string py = FindPython();
+            string tool = nxt ? FindNxtTool() : FindRcxTool();
+            if (py == null || tool == null)
+            {
+                Log(I18n.T("Python or the USB tool is missing. Press Test tools."), Ui.P.LogErr, true);
+                return null;
+            }
+            StringBuilder cmd = new StringBuilder();
+            if (string.Equals(Path.GetFileName(py), "py.exe", StringComparison.OrdinalIgnoreCase))
+                cmd.Append("-3 ");
+            cmd.Append(Quote(tool));
+            for (int i = 0; i < args.Length; i++) { cmd.Append(' '); cmd.Append(Quote(args[i])); }
+            ProcessStartInfo psi = new ProcessStartInfo(py, cmd.ToString());
+            psi.UseShellExecute = false;
+            psi.CreateNoWindow = true;
+            psi.RedirectStandardOutput = true;
+            psi.RedirectStandardError = true;
+            psi.RedirectStandardInput = redirectIn;
+            psi.WorkingDirectory = AppDir;
+            return psi;
+        }
+
+        public void LogError(string text)
+        {
+            Log(text, Ui.P.LogErr, true);
         }
 
         public void RunRemote(string raw)

@@ -65,10 +65,24 @@ namespace BrickCode
         public readonly EntryBox Cmd = new EntryBox();
         public readonly FlatButton BtnCmdRun = new FlatButton();
 
+        // What the NXT mode shows in place of the RCX / Scout utilities.
+        public readonly PaintCard CardNxt = new PaintCard();
+        public readonly FlatButton BtnNxtTest = new FlatButton();
+        public readonly FlatButton BtnNxtExplorer = new FlatButton();
+        public readonly FlatButton BtnNxtScreen = new FlatButton();
+        public readonly FlatButton BtnNxtStop = new FlatButton();
+        public bool NxtMode;
+
         public SettingsPanel()
         {
             Controls.Add(CardTop);
             Controls.Add(CardUtils);
+            Controls.Add(CardNxt);
+            CardNxt.Controls.Add(BtnNxtTest);
+            CardNxt.Controls.Add(BtnNxtExplorer);
+            CardNxt.Controls.Add(BtnNxtScreen);
+            CardNxt.Controls.Add(BtnNxtStop);
+            CardNxt.Painter = PaintNxt;
             Controls.Add(CardCmd);
 
             CardTop.Controls.Add(Target);
@@ -120,8 +134,10 @@ namespace BrickCode
         {
             Dr.TextLeft(g, I18n.T("TARGET"), Ui.B(8.25f), Ui.P.Muted, new Rectangle(16, 10, c.Width - 24, 16));
             Dr.TextLeft(g, TargetNote(), Ui.F(8.25f), Ui.P.Muted, new Rectangle(16, 66, c.Width - 24, 16));
-            Dr.TextLeft(g, I18n.T("PROGRAM SLOT"), Ui.B(8.25f), Ui.P.Muted, new Rectangle(16, 88, c.Width - 24, 16));
-            Dr.TextLeft(g, I18n.T("EDITOR THEME"), Ui.B(8.25f), Ui.P.Muted, new Rectangle(16, 150, c.Width - 24, 16));
+            if (!NxtMode)
+                Dr.TextLeft(g, I18n.T("PROGRAM SLOT"), Ui.B(8.25f), Ui.P.Muted, new Rectangle(16, 88, c.Width - 24, 16));
+            Dr.TextLeft(g, I18n.T("EDITOR THEME"), Ui.B(8.25f), Ui.P.Muted,
+                        new Rectangle(16, NxtMode ? 88 : 150, c.Width - 24, 16));
         }
 
         void PaintUtils(Graphics g, PaintCard c)
@@ -140,6 +156,14 @@ namespace BrickCode
                         new Rectangle(16, ShutY, LabelW - 8, 34));
             Dr.TextLeft(g, I18n.T("min"), Ui.F(8.75f), Ui.P.Muted,
                         new Rectangle(ShutMinX, ShutY, 30, 30));
+        }
+
+        void PaintNxt(Graphics g, PaintCard c)
+        {
+            Dr.TextLeft(g, I18n.T("NXT utilities"), Ui.B(9.75f), Ui.P.Fg,
+                        new Rectangle(16, 8, c.Width - 24, 20));
+            Dr.TextLeft(g, I18n.T("USB cable: no tower, no port to set."), Ui.F(8.25f), Ui.P.Muted,
+                        new Rectangle(16, 132, c.Width - 24, 32));
         }
 
         void PaintCmd(Graphics g, PaintCard c)
@@ -168,6 +192,17 @@ namespace BrickCode
                 colored[i].Fill = fills[i];
                 colored[i].FgColor = Color.White;
                 colored[i].Radius = 10;
+            }
+
+            FlatButton[] nxtBtns = { BtnNxtTest, BtnNxtExplorer, BtnNxtScreen, BtnNxtStop };
+            Color[] nxtFill = { Ui.P.Green, Ui.P.Magenta, Ui.P.Yellow, Ui.P.Red };
+            string[] nxtText = { "Test brick", "NXT Explorer", "NXT Screen", "Stop program" };
+            for (int i = 0; i < nxtBtns.Length; i++)
+            {
+                nxtBtns[i].Fill = nxtFill[i];
+                nxtBtns[i].FgColor = Color.White;
+                nxtBtns[i].Radius = 10;
+                nxtBtns[i].Text = I18n.T(nxtText[i]);
             }
 
             FlatButton[] plain = { BtnBrowse, BtnDetect, BtnApply, BtnMinus, BtnPlus, BtnCmdRun };
@@ -238,13 +273,30 @@ namespace BrickCode
             int cardW = w - pad * 2;
             int y = 32;
 
-            CardTop.SetBounds(pad, y, cardW, 212);
+            // The program slot is an RCX / Scout idea; the NXT has none.
+            Slot.Visible = !NxtMode;
+            CardUtils.Visible = !NxtMode;
+            CardCmd.Visible = !NxtMode;
+            CardNxt.Visible = NxtMode;
+            int topH = NxtMode ? 150 : 212;
+            CardTop.SetBounds(pad, y, cardW, topH);
             int iw = cardW - 32;
             Target.SetBounds(16, 30, iw, 34);
             Slot.SetBounds(16, 106, iw, 34);
-            ThemeDd.SetBounds(16, 168, iw, 34);
+            ThemeDd.SetBounds(16, NxtMode ? 106 : 168, iw, 34);
 
-            y += 212 + 10;
+            y += topH + 10;
+
+            if (NxtMode)
+            {
+                int g2 = 8, c2 = (iw - g2) / 2;
+                CardNxt.SetBounds(pad, y, cardW, 176);
+                BtnNxtTest.SetBounds(16, 34, c2, 40);
+                BtnNxtStop.SetBounds(16 + c2 + g2, 34, c2, 40);
+                BtnNxtExplorer.SetBounds(16, 34 + 40 + g2, c2, 40);
+                BtnNxtScreen.SetBounds(16 + c2 + g2, 34 + 40 + g2, c2, 40);
+                return;
+            }
 
             CardUtils.SetBounds(pad, y, cardW, 360);
             int gap = 8;

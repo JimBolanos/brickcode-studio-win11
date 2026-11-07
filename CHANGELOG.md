@@ -27,7 +27,7 @@ RCX Tower GUI. They are kept here for the record.
 - **HOME screen** with one card per brick (RCX, Scout, NXT, EV3), the four bricks drawn
   from the Apple / Linux edition's drawings; the **bottom navigation** HOME / CODE / BLOCKS /
   ABOUT; and an **ABOUT screen** (what it uses, documentation, links, legal). The app now
-  opens on HOME. **BLOCKS** opens a window to choose the block editor (RCX / Scout, NXT or
+  opens on HOME. **BLOCKS** opens a small menu to choose the block editor (RCX / Scout, NXT or
   EV3) instead of guessing from the current mode.
 - `test-nxt.bat` tests the whole NXT chain without the GUI.
 - `nbc.exe` bundled (MPL 1.1, unchanged); the NXT-only block page is no longer left out.

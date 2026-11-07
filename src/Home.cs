@@ -38,6 +38,13 @@ namespace BrickCode
             return -1;
         }
 
+        /// Where a button was last drawn, so a menu can open right above it.
+        public Rectangle BoxOf(string id)
+        {
+            for (int i = 0; i < 4; i++) if (Ids[i] == id) return boxes[i];
+            return Rectangle.Empty;
+        }
+
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
@@ -570,37 +577,6 @@ namespace BrickCode
                     if (ch == " ") cx += 2;
                 }
             }
-        }
-    }
-
-    // -----------------------------------------------------------------------
-    // BLOCKS: choose which block editor to open (RCX / Scout, NXT or EV3).
-    // -----------------------------------------------------------------------
-    class BlocksPicker : Form
-    {
-        public string Choice;
-
-        public BlocksPicker()
-        {
-            Text = I18n.T("Block editor");
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
-            MinimizeBox = false;
-            ShowInTaskbar = false;
-            StartPosition = FormStartPosition.CenterParent;
-            BackColor = Ui.P.Bg;
-            ClientSize = new Size(900, 540);
-            Icon = BrickIcon.WindowIcon();
-
-            HomePage page = new HomePage(true);
-            page.Dock = DockStyle.Fill;
-            page.Picked += delegate(object o, SideEventArgs e)
-            {
-                Choice = e.Id;
-                DialogResult = DialogResult.OK;
-                Close();
-            };
-            Controls.Add(page);
         }
     }
 }

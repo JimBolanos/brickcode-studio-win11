@@ -621,16 +621,22 @@ namespace BrickCode
             ShowScreen(id);
         }
 
-        /// BLOCKS is a door, not a room: a window asks which editor, then it
+        /// BLOCKS is a door, not a room: a small menu asks which editor, then it
         /// opens in the browser and you stay where you were.
         void ChooseBlocks()
         {
-            using (BlocksPicker d = new BlocksPicker())
-            {
-                if (d.ShowDialog(this) != DialogResult.OK) return;
-                if (d.Choice == "ev3") OpenPybricksEditor();
-                else OpenBlockEditorFor(d.Choice == "nxt");
-            }
+            ContextMenuStrip menu = new ContextMenuStrip();
+            menu.Renderer = new MenuRenderer();
+            menu.BackColor = Ui.P.Card;
+            menu.ForeColor = Ui.P.Fg;
+            menu.Font = Ui.F(10f);
+            menu.ShowImageMargin = false;
+            AddItem(menu, I18n.T("RCX / Scout  —  NQC blocks"), delegate { OpenBlockEditorFor(false); });
+            AddItem(menu, I18n.T("NXT  —  NXC blocks"), delegate { OpenBlockEditorFor(true); });
+            AddItem(menu, I18n.T("EV3  —  Pybricks (Python) blocks"), delegate { OpenPybricksEditor(); });
+            Rectangle box = nav.BoxOf("blocks");
+            Size sz = menu.GetPreferredSize(Size.Empty);
+            menu.Show(nav, new Point(box.X, box.Y - sz.Height - 4));
         }
 
         void BrickPicked(string id)

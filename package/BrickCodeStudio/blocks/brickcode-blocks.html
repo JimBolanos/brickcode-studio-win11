@@ -68,28 +68,11 @@
   .sheet .ext { font-size: 11px; color: var(--muted); margin: 8px 2px 0; }
   .sheet .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
 
-  /* app identity and the File menu */
+  /* app identity */
   .brand { display: flex; align-items: center; gap: 9px; }
   .appicon { display: block; border-radius: 7px; flex: 0 0 auto; }
   .brandname { font-weight: 700; font-size: 13px; letter-spacing: .1px; }
 
-  .menuwrap { position: relative; }
-  .menu {
-    position: absolute; top: calc(100% + 6px); left: 0; z-index: 60;
-    min-width: 212px; padding: 6px;
-    background: var(--panel); border: 1px solid var(--border);
-    border-radius: 11px; box-shadow: 0 14px 38px rgba(0,0,0,.45);
-  }
-  body[data-theme="light"] .menu { box-shadow: 0 14px 38px rgba(0,0,0,.16); }
-  .menu[hidden] { display: none; }
-  .menu button {
-    display: flex; align-items: center; gap: 10px; width: 100%;
-    padding: 8px 10px; border: 0; border-radius: 8px; background: transparent;
-    color: var(--fg); font-size: 12.5px; text-align: left;
-  }
-  .menu button:hover { background: var(--field); }
-  .menu .key { margin-left: auto; color: var(--muted); font-size: 11px; }
-  .menu hr { border: 0; border-top: 1px solid var(--border); margin: 5px 2px; }
 
   /* banner shown while looking at a file we did not generate */
   /* A class selector beats the browser's own [hidden] rule, so the attribute
@@ -217,26 +200,17 @@
     </div>
   </div>
 
-  <div class="menuwrap">
-    <button id="btnMenu" aria-haspopup="true" aria-expanded="false">File &#9662;</button>
-    <div class="menu" id="menu" hidden>
-      <button id="miNew">New project<span class="key">empty</span></button>
-      <button id="miExample">Load example</button>
-      <hr>
-      <button id="miOpen">Open&hellip;<span class="key">.nqc .nxc</span></button>
-      <button id="miSave">Save<span class="key" id="miSaveExt">.nqc</span></button>
-      <button id="miSaveAs">Save as&hellip;</button>
-      <hr>
-      <button id="miClear">Clear canvas</button>
-    </div>
-  </div>
-
   <div class="spacer"></div>
   <div class="seg" id="seg">
     <button id="mNqc" class="on" title="RCX and Scout, programmed in NQC over the USB tower">NQC &middot; RCX</button>
     <button id="mNxc" title="NXT, programmed in NXC and compiled with nbc">NXC &middot; NXT</button>
   </div>
   <input id="fileIn" type="file" accept=".nqc,.nxc,text/plain" hidden>
+  <button id="miExample" title="Load the example program">Example</button>
+  <button id="miClear" title="Empty the canvas">Clear</button>
+  <button id="miOpen" title="Open a saved program (Ctrl/Cmd+O)">Open</button>
+  <button id="miSave" title="Save as .nqc (Ctrl/Cmd+S)">Save</button>
+  <button id="miSaveAs" title="Save as (Ctrl/Cmd+Shift+S)">Save as…</button>
   <button id="btnTheme">Light</button>
   <button id="btnCopy" class="primary">Copy NQC</button>
 </header>
@@ -252,9 +226,9 @@
     <pre id="out"></pre>
     <div class="note">
       <span id="note-nqc">The blocks only write NQC. Compiling it and sending it to the
-      brick stays the app's job: <code>nqc.exe</code> and then the USB tower.</span>
+      brick stays the app's job: <code>nqc</code> and then the USB tower.</span>
       <span id="note-nxc" hidden>The blocks only write NXC. Compiling it and sending it
-      to the brick stays the app's job: <code>nbc.exe</code> and then USB or Bluetooth.</span>
+      to the brick stays the app's job: <code>nbc</code> and then USB or Bluetooth.</span>
     </div>
   </aside>
 </main>
@@ -3182,6 +3156,7 @@ return $.__chunk_javascript;
       C_MOTOR = "#0085F3",   // Motors
       C_MOVE  = "#FA4FC7",   // Movement
       C_SOUND = "#B765E3",   // Sound
+      C_IR    = "#14B8A6",   // IR Messages (RCX) and Bluetooth (NXT)
       C_CTRL  = "#FFAC15",   // Control
       C_SENSE = "#1BC5EE",   // Sensors
       C_OPS   = "#00B044",   // Operators
@@ -3221,8 +3196,17 @@ return $.__chunk_javascript;
     ["light, reflected", "LIGHT"],       // the sensor's own lamp is on
     ["light, ambient", "LIGHT_AMB"],     // lamp off, reads the room
     ["sound", "SOUND"],
-    ["ultrasonic", "US"]                 // the only digital sensor in the NXT set
+    ["ultrasonic", "US"],                // the only digital sensor in the NXT set
+    ["colour, sees colours", "COLOR"],   // the colour sensor of the NXT 2.0 set
+    ["colour, as a light sensor", "COLOR_LIGHT"]
   ];
+  var NXT_COLORS = [
+    ["black", "INPUT_BLACKCOLOR"], ["blue", "INPUT_BLUECOLOR"],
+    ["green", "INPUT_GREENCOLOR"], ["yellow", "INPUT_YELLOWCOLOR"],
+    ["red", "INPUT_REDCOLOR"], ["white", "INPUT_WHITECOLOR"]
+  ];
+  var NXT_CHANNELS = [["1", "MAILBOX1"], ["2", "MAILBOX2"], ["3", "MAILBOX3"],
+                      ["4", "MAILBOX4"], ["5", "MAILBOX5"]];
   var NXT_UNITS = [["seconds", "SEC"], ["degrees", "DEG"], ["rotations", "ROT"]];
   var NXT_LINES = (function () {
     var a = [];
@@ -3310,6 +3294,26 @@ return $.__chunk_javascript;
     { type: "rcx_playsound", message0: "play sound %1",
       args0: [{ type: "field_dropdown", name: "SND", options: SOUNDS }],
       previousStatement: null, nextStatement: null, colour: C_SOUND },
+
+    // ---- IR Messages (RCX, RCX 2, Scout) ----
+    { type: "rcx_ir_power", message0: "set IR transmitter power to %1",
+      args0: [{ type: "field_dropdown", name: "LVL",
+                options: [["low", "TX_POWER_LO"], ["high", "TX_POWER_HI"]] }],
+      previousStatement: null, nextStatement: null, colour: C_IR,
+      tooltip: "Low power only reaches a brick close by, high power reaches farther" },
+
+    { type: "rcx_ir_send", message0: "send IR message %1",
+      args0: [{ type: "input_value", name: "MSG", check: "Number" }],
+      inputsInline: true, previousStatement: null, nextStatement: null, colour: C_IR,
+      tooltip: "Sends a number from 0 to 255 by infrared. Another brick can read it with \u201creceive IR message\u201d" },
+
+    { type: "rcx_ir_clear", message0: "clear last received IR message",
+      previousStatement: null, nextStatement: null, colour: C_IR,
+      tooltip: "Forget the last message, so \u201creceive IR message\u201d reads 0 until a new one arrives" },
+
+    { type: "rcx_ir_receive", message0: "receive IR message",
+      output: "Number", colour: C_IR,
+      tooltip: "The last IR message this brick received (0 to 255), or 0 if there is none" },
 
     // ---- Control ----
     { type: "rcx_wait", message0: "wait %1 seconds",
@@ -3497,6 +3501,63 @@ return $.__chunk_javascript;
     { type: "nxt_disp_clear", message0: "clear display",
       previousStatement: null, nextStatement: null, colour: C_DISP },
 
+    { type: "nxt_picture", message0: "show %1 on the screen",
+      args0: [{ type: "field_dropdown", name: "PIC", options: [
+                ["happy face", "happy"],
+                ["smiling face", "smile"],
+                ["winking face", "wink"],
+                ["serious face", "serious"],
+                ["unsure face", "unsure"],
+                ["sad face", "sad"],
+                ["eyes open", "open"],
+                ["eyes closed", "closed"],
+                ["big heart", "heart"],
+                ["small heart", "heart_small"],
+                ["sleeping zzz", "zzz"],
+                ["speech bubble", "bubble"],
+                ["thumbs up", "thumbup"],
+                ["thumbs down", "thumbdown"],
+                ["cross \u2717", "cross"],
+                ["check \u2713", "check"],
+                ["question mark", "question"],
+                ["stop sign", "stop"],
+                ["mouth with teeth", "teeth"],
+                ["small mouth with teeth", "teeth_small"],
+                ["mouth with fangs", "fangs"],
+                ["arrow up \u2191", "up"],
+                ["arrow down \u2193", "down"],
+                ["arrow left \u2190", "left"],
+                ["arrow right \u2192", "right"]] }],
+      previousStatement: null, nextStatement: null, colour: C_DISP,
+      tooltip: "Clears the screen and draws it. The picture stays only while " +
+               "the program runs, so finish with a wait block." },
+    { type: "nxt_draw_pixel", message0: "dot at x %1 y %2",
+      args0: [{ type: "field_number", name: "X", value: 50, min: 0, max: 99, precision: 1 },
+              { type: "field_number", name: "Y", value: 32, min: 0, max: 63, precision: 1 }],
+      previousStatement: null, nextStatement: null, colour: C_DISP,
+      tooltip: "One black dot. The screen is 100 wide (x) by 64 tall (y), counted from the top left." },
+    { type: "nxt_draw_line", message0: "line from x %1 y %2 to x %3 y %4",
+      args0: [{ type: "field_number", name: "X1", value: 0, min: 0, max: 99, precision: 1 },
+              { type: "field_number", name: "Y1", value: 0, min: 0, max: 63, precision: 1 },
+              { type: "field_number", name: "X2", value: 99, min: 0, max: 99, precision: 1 },
+              { type: "field_number", name: "Y2", value: 63, min: 0, max: 63, precision: 1 }],
+      previousStatement: null, nextStatement: null, colour: C_DISP,
+      tooltip: "x runs 0\u201399 and y 0\u201363, counted from the top left corner." },
+    { type: "nxt_draw_box", message0: "box from x %1 y %2 to x %3 y %4 filled %5",
+      args0: [{ type: "field_number", name: "X1", value: 10, min: 0, max: 99, precision: 1 },
+              { type: "field_number", name: "Y1", value: 10, min: 0, max: 63, precision: 1 },
+              { type: "field_number", name: "X2", value: 60, min: 0, max: 99, precision: 1 },
+              { type: "field_number", name: "Y2", value: 40, min: 0, max: 63, precision: 1 },
+              { type: "field_checkbox", name: "FILL", checked: false }],
+      previousStatement: null, nextStatement: null, colour: C_DISP,
+      tooltip: "From the top left corner to the bottom right one." },
+    { type: "nxt_draw_circle", message0: "circle at x %1 y %2 radius %3 filled %4",
+      args0: [{ type: "field_number", name: "X", value: 50, min: 0, max: 99, precision: 1 },
+              { type: "field_number", name: "Y", value: 32, min: 0, max: 63, precision: 1 },
+              { type: "field_number", name: "R", value: 20, min: 1, max: 31, precision: 1 },
+              { type: "field_checkbox", name: "FILL", checked: false }],
+      previousStatement: null, nextStatement: null, colour: C_DISP },
+
     // ---- Sound ----
     { type: "nxt_tone", message0: "play beep %1 Hz for %2 seconds",
       args0: [{ type: "field_number", name: "HZ", value: 440, min: 31, max: 14000 },
@@ -3510,6 +3571,28 @@ return $.__chunk_javascript;
 
     { type: "nxt_sound_stop", message0: "stop all sounds",
       previousStatement: null, nextStatement: null, colour: C_SOUND },
+
+    // ---- Bluetooth (NXT to NXT) ----
+    { type: "nxt_bt_role", message0: "Bluetooth: this NXT is the %1",
+      args0: [{ type: "field_dropdown", name: "ROLE",
+                options: [["leader", "LEADER"], ["follower", "FOLLOWER"]] }],
+      previousStatement: null, nextStatement: null, colour: C_IR,
+      tooltip: "Put this block once in the program. The leader is the NXT that makes the connection: on its screen open Bluetooth, search for the other NXT and connect it on line 1. The other NXT is the follower and waits." },
+
+    { type: "nxt_bt_connected", message0: "Bluetooth connected?",
+      output: "Boolean", colour: C_IR,
+      tooltip: "True while the two NXTs are connected" },
+
+    { type: "nxt_bt_send", message0: "send number %1 on channel %2",
+      args0: [{ type: "input_value", name: "NUM", check: "Number" },
+              { type: "field_dropdown", name: "CH", options: NXT_CHANNELS }],
+      inputsInline: true, previousStatement: null, nextStatement: null, colour: C_IR,
+      tooltip: "The other NXT reads it on the same channel. A follower should answer only after the leader asked, a few at a time." },
+
+    { type: "nxt_bt_last", message0: "last number received on channel %1",
+      args0: [{ type: "field_dropdown", name: "CH", options: NXT_CHANNELS }],
+      output: "Number", colour: C_IR,
+      tooltip: "The newest number from the other NXT on this channel, or 0 if none has come yet. Ask for it again every little while (with a short wait): it does not arrive by itself." },
 
     // ---- Sensors: only what came in the NXT set ----
     { type: "nxt_setsensor", message0: "set sensor %1 as %2",
@@ -3526,6 +3609,22 @@ return $.__chunk_javascript;
       args0: [{ type: "field_dropdown", name: "S", options: NXT_PORTS }],
       output: "Number", colour: C_SENSE,
       tooltip: "Light and sound read 0 to 100, touch reads 0 or 1" },
+
+    { type: "nxt_color_is", message0: "sensor %1 sees %2 ?",
+      args0: [{ type: "field_dropdown", name: "S", options: NXT_PORTS },
+              { type: "field_dropdown", name: "COLOR", options: NXT_COLORS }],
+      output: "Boolean", colour: C_SENSE,
+      tooltip: "Needs that port set as \u201ccolour, sees colours\u201d first. Hold the sensor close to the colour." },
+
+    { type: "nxt_light_level", message0: "light sensor %1 level %%",
+      args0: [{ type: "field_dropdown", name: "S", options: NXT_PORTS }],
+      output: "Number", colour: C_SENSE,
+      tooltip: "0 is dark, 100 is bright. Set the port as light (or colour as a light sensor) first." },
+
+    { type: "nxt_sound_level", message0: "sound sensor %1 loudness %%",
+      args0: [{ type: "field_dropdown", name: "S", options: NXT_PORTS }],
+      output: "Number", colour: C_SENSE,
+      tooltip: "0 is quiet, 100 is loud. Set the port as sound first." },
 
     { type: "nxt_distance", message0: "sensor %1 distance in cm",
       args0: [{ type: "field_dropdown", name: "S", options: NXT_PORTS }],
@@ -3654,6 +3753,15 @@ return $.__chunk_javascript;
   nqc.forBlock["rcx_playsound"] = function (b) {
     return "PlaySound(" + b.getFieldValue("SND") + ");\n";
   };
+
+  nqc.forBlock["rcx_ir_power"] = function (b) {
+    return "SetTxPower(" + b.getFieldValue("LVL") + ");\n";
+  };
+  nqc.forBlock["rcx_ir_send"] = function (b, g) {
+    return "SendMessage(" + (g.valueToCode(b, "MSG", NONE) || "0") + ");\n";
+  };
+  nqc.forBlock["rcx_ir_clear"] = function () { return "ClearMessage();\n"; };
+  nqc.forBlock["rcx_ir_receive"] = function () { return ["Message()", ATOMIC]; };
 
   nqc.forBlock["rcx_wait"] = function (b) {
     return "Wait(" + Math.round(Number(b.getFieldValue("SECS")) * 100) + ");\n";
@@ -3815,9 +3923,13 @@ return $.__chunk_javascript;
     return code;
   };
 
-  var usedTimer = false;
+  var usedTimer = false, picsDone = {}, btRole = "LEADER", btNumbers = false;
   nxc.init = function (w) {
     theWs = w; extraTasks = []; taskSeq = 0; nxtPair = "BC"; usedTimer = false;
+    picsDone = {}; btNumbers = false; btRole = "LEADER";
+    // the first Bluetooth role block on the page decides, wherever it sits
+    var roles = w.getBlocksByType ? w.getBlocksByType("nxt_bt_role", false) : [];
+    if (roles.length) btRole = roles[0].getFieldValue("ROLE");
   };
   nxc.finish = function (code) {
     var names = [], i;
@@ -3830,6 +3942,7 @@ return $.__chunk_javascript;
     var head = "";
     // The NXT has room for far more than the RCX's 32, so no warning here.
     if (usedTimer) head += "long __t0;   // the timer block measures from here\n";
+    if (btNumbers) head += "long __btNum[10];   // the last number received on each Bluetooth channel\n";
     for (i = 0; i < names.length; i++) head += "int " + names[i] + ";\n";
     if (head) head += "\n";
     // Measured against nbc: NXC wants a function defined before it is called
@@ -3936,6 +4049,222 @@ return $.__chunk_javascript;
   };
   nxc.forBlock["nxt_disp_clear"] = function () { return "ClearScreen();\n"; };
 
+
+  // ---- Pictures and drawing on the 100 x 64 screen --------------------------
+  // The blocks count x from the left and y from the TOP, like the EV3 editor;
+  // the NXT counts y from the bottom, so every y is turned into 63 - y here.
+  function nxY(y) { return 63 - y; }
+  function nxLine(x1, y1, x2, y2) {
+    return "LineOut(" + x1 + ", " + nxY(y1) + ", " + x2 + ", " + nxY(y2) + ");";
+  }
+  // The standard firmware cannot fill a shape and, measured on a real NXT,
+  // ignores DRAW_OPT_CLEAR_PIXELS, so a picture cannot be built by drawing
+  // white over black. Each one is painted here, white parts included, and only
+  // the black pixels are written out, one LineOut per run along each row.
+  function nxPic(build) {
+    var bm = [], x, y;
+    for (y = 0; y < 64; y++) { bm.push([]); for (x = 0; x < 100; x++) bm[y].push(0); }
+    function dot(px, py, white) {
+      if (px >= 0 && px < 100 && py >= 0 && py < 64) bm[py][px] = white ? 0 : 1;
+    }
+    var A = {
+      line: function (x1, y1, x2, y2, white) {
+        var n = Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1), 1);
+        for (var i = 0; i <= n; i++)
+          dot(Math.round(x1 + (x2 - x1) * i / n), Math.round(y1 + (y2 - y1) * i / n), white);
+      },
+      thick: function (x1, y1, x2, y2, w, white) {
+        var horiz = Math.abs(x2 - x1) >= Math.abs(y2 - y1);
+        var lo = -Math.floor((w - 1) / 2);
+        for (var k = lo; k < lo + w; k++) {
+          if (horiz) A.line(x1, y1 + k, x2, y2 + k, white);
+          else A.line(x1 + k, y1, x2 + k, y2, white);
+        }
+      },
+      disc: function (cx, cy, r, white) {
+        for (var dy = -r; dy <= r; dy++) {
+          var h = Math.round(Math.sqrt(r * r - dy * dy));
+          A.line(cx - h, cy + dy, cx + h, cy + dy, white);
+        }
+      },
+      box: function (x1, y1, x2, y2, white) {
+        for (var yy = y1; yy <= y2; yy++) A.line(x1, yy, x2, yy, white);
+      }
+    };
+    build(A);
+    var out = [];
+    for (y = 0; y < 64; y++) {
+      x = 0;
+      while (x < 100) {
+        if (!bm[y][x]) { x++; continue; }
+        var x0 = x;
+        while (x < 100 && bm[y][x]) x++;
+        out.push(x - 1 === x0 ? "PointOut(" + x0 + ", " + nxY(y) + ");"
+                              : "LineOut(" + x0 + ", " + nxY(y) + ", " + (x - 1) + ", " + nxY(y) + ");");
+      }
+    }
+    return out;
+  }
+  var NPICS = {
+    happy: ["happy_face", function (A) {
+      A.disc(50, 42, 15); A.disc(50, 42, 12, 1); A.box(30, 26, 70, 41, 1);
+      A.thick(37, 42, 63, 42, 2);
+      [37, 63].forEach(function (x) {
+        A.thick(x - 5, 27, x - 2, 24, 2); A.thick(x - 2, 24, x + 2, 24, 2);
+        A.thick(x + 2, 24, x + 5, 27, 2); });
+    }],
+    smile: ["smile_face", function (A) {
+      A.disc(50, 36, 17); A.disc(50, 36, 14, 1); A.box(30, 15, 70, 36, 1);
+      A.disc(37, 27, 3); A.disc(63, 27, 3);
+    }],
+    wink: ["wink_face", function (A) {
+      A.disc(50, 36, 17); A.disc(50, 36, 14, 1); A.box(30, 15, 70, 36, 1);
+      A.disc(37, 27, 3); A.thick(58, 27, 68, 27, 2);
+    }],
+    serious: ["serious_face", function (A) {
+      A.disc(37, 26, 3); A.disc(63, 26, 3); A.thick(37, 46, 63, 46, 2);
+    }],
+    unsure: ["unsure_face", function (A) {
+      A.disc(37, 26, 3); A.disc(63, 26, 3);
+      A.thick(33, 48, 42, 44, 2); A.thick(42, 44, 50, 48, 2);
+      A.thick(50, 48, 59, 52, 2); A.thick(59, 52, 67, 48, 2);
+    }],
+    sad: ["sad_face", function (A) {
+      A.disc(50, 56, 15); A.disc(50, 56, 12, 1); A.box(30, 56, 70, 63, 1);
+      A.disc(37, 27, 3); A.disc(63, 27, 3);
+      A.thick(30, 19, 43, 23, 2); A.thick(70, 19, 57, 23, 2);
+    }],
+    open: ["eyes_open", function (A) {
+      [31, 69].forEach(function (x) { A.disc(x, 32, 13); A.disc(x, 32, 11, 1); A.disc(x, 32, 5); });
+    }],
+    closed: ["eyes_closed", function (A) {
+      [31, 69].forEach(function (x) {
+        A.disc(x, 28, 13); A.disc(x, 28, 11, 1); A.box(x - 14, 10, x + 14, 27, 1); });
+    }],
+    heart: ["big_heart", function (A) {
+      A.disc(34, 24, 16); A.disc(66, 24, 16);
+      for (var y = 26; y <= 58; y++) A.line(50 - (58 - y), y, 50 + (58 - y), y);
+    }],
+    heart_small: ["small_heart", function (A) {
+      A.disc(43, 26, 7); A.disc(57, 26, 7);
+      for (var y = 28; y <= 46; y++) {
+        var h = Math.round((46 - y) * 14 / 18); A.line(50 - h, y, 50 + h, y); }
+    }],
+    zzz: ["sleeping_zzz", function (A) {
+      [[8, 6, 30, 4], [46, 22, 20, 3], [76, 44, 12, 2]].forEach(function (z) {
+        var x = z[0], y = z[1], s = z[2], w = z[3];
+        A.thick(x, y, x + s, y, w); A.thick(x + s, y, x, y + s, w);
+        A.thick(x, y + s, x + s, y + s, w); });
+    }],
+    bubble: ["speech_bubble", function (A) {
+      A.box(6, 5, 93, 45); A.box(8, 7, 91, 43, 1); A.box(18, 43, 34, 47, 1);
+      A.thick(20, 45, 15, 60, 2); A.thick(15, 60, 35, 45, 2);
+      [34, 50, 66].forEach(function (x) { A.disc(x, 26, 2); });
+    }],
+    thumbup: ["thumbs_up", function (A) {
+      A.box(6, 31, 19, 59); A.box(24, 31, 90, 59); A.box(32, 9, 49, 36);
+      [39, 46, 53].forEach(function (y) { A.line(58, y, 90, y, 1); });
+    }],
+    thumbdown: ["thumbs_down", function (A) {
+      A.box(6, 4, 19, 32); A.box(24, 4, 90, 32); A.box(32, 27, 49, 54);
+      [24, 17, 10].forEach(function (y) { A.line(58, y, 90, y, 1); });
+    }],
+    cross: ["cross_mark", function (A) {
+      A.thick(22, 8, 78, 56, 6); A.thick(78, 8, 22, 56, 6);
+    }],
+    check: ["check_mark", function (A) {
+      A.thick(18, 34, 38, 54, 6); A.thick(38, 54, 80, 10, 6);
+    }],
+    question: ["question_mark", function (A) {
+      A.disc(50, 20, 15); A.disc(50, 20, 8, 1); A.box(32, 21, 49, 40, 1);
+      A.box(46, 34, 54, 48); A.disc(50, 58, 4);
+    }],
+    stop: ["stop_sign", function (A) {
+      var y, k;
+      for (y = 3; y <= 61; y++) { k = Math.max(17 - (y - 3), 17 - (61 - y), 0); A.line(22 + k, y, 78 - k, y); }
+      for (y = 7; y <= 57; y++) { k = Math.max(13 - (y - 7), 13 - (57 - y), 0); A.line(26 + k, y, 74 - k, y, 1); }
+      A.thick(30, 27, 38, 27, 2); A.thick(30, 27, 30, 32, 2); A.thick(30, 32, 38, 32, 2);
+      A.thick(38, 32, 38, 37, 2); A.thick(30, 37, 38, 37, 2);
+      A.thick(41, 27, 49, 27, 2); A.thick(45, 27, 45, 37, 2);
+      A.box(52, 26, 60, 38); A.box(54, 28, 58, 36, 1);
+      A.thick(63, 27, 71, 27, 2); A.thick(63, 27, 63, 37, 2);
+      A.thick(71, 27, 71, 32, 2); A.thick(63, 32, 71, 32, 2);
+    }],
+    teeth: ["mouth_teeth", function (A) {
+      A.box(3, 10, 96, 54); A.box(5, 12, 94, 52, 1); A.thick(5, 32, 94, 32, 2);
+      [20, 35, 50, 65, 80].forEach(function (x) { A.line(x, 12, x, 30); A.line(x, 34, x, 52); });
+    }],
+    teeth_small: ["small_mouth_teeth", function (A) {
+      A.box(18, 22, 81, 43); A.box(20, 24, 79, 41, 1); A.line(20, 32, 79, 32);
+      [30, 40, 50, 60, 70].forEach(function (x) { A.line(x, 24, x, 31); A.line(x, 33, x, 41); });
+    }],
+    fangs: ["mouth_fangs", function (A) {
+      A.box(3, 10, 96, 54); A.box(5, 12, 94, 52, 1);
+      for (var d = 0; d < 16; d++) {
+        var w = Math.floor((16 - d) * 7 / 16);
+        [20, 35, 50, 65, 80].forEach(function (x) { A.line(x - w, 12 + d, x + w, 12 + d); });
+        [28, 43, 58, 73].forEach(function (x) { A.line(x - w, 52 - d, x + w, 52 - d); });
+      }
+    }],
+    up: ["arrow_up", function (A) {
+      A.box(43, 34, 57, 60);
+      for (var y = 4; y <= 34; y++) { var w = Math.floor((y - 4) * 20 / 30); A.line(50 - w, y, 50 + w, y); }
+    }],
+    down: ["arrow_down", function (A) {
+      A.box(43, 3, 57, 29);
+      for (var y = 29; y <= 59; y++) { var w = Math.floor((59 - y) * 20 / 30); A.line(50 - w, y, 50 + w, y); }
+    }],
+    left: ["arrow_left", function (A) {
+      A.box(34, 26, 92, 38);
+      for (var x = 6; x <= 34; x++) { var h = Math.floor((x - 6) * 16 / 28); A.line(x, 32 - h, x, 32 + h); }
+    }],
+    right: ["arrow_right", function (A) {
+      A.box(8, 26, 66, 38);
+      for (var x = 66; x <= 94; x++) { var h = Math.floor((94 - x) * 16 / 28); A.line(x, 32 - h, x, 32 + h); }
+    }]
+  };
+  nxc.forBlock["nxt_picture"] = function (b) {
+    var P = NPICS[b.getFieldValue("PIC")] || NPICS.happy, fn = "draw_" + P[0];
+    if (!picsDone[fn]) {
+      picsDone[fn] = true;
+      extraTasks.push("void " + fn + "()\n{\n  ClearScreen();\n" +
+        nxPic(P[1]).map(function (l) { return "  " + l + "\n"; }).join("") + "}\n");
+    }
+    return fn + "();\n";
+  };
+  nxc.forBlock["nxt_draw_pixel"] = function (b) {
+    return "PointOut(" + b.getFieldValue("X") + ", " + nxY(b.getFieldValue("Y")) + ");\n";
+  };
+  nxc.forBlock["nxt_draw_line"] = function (b) {
+    return nxLine(b.getFieldValue("X1"), b.getFieldValue("Y1"),
+                  b.getFieldValue("X2"), b.getFieldValue("Y2")) + "\n";
+  };
+  nxc.forBlock["nxt_draw_box"] = function (b) {
+    var xa = Math.min(b.getFieldValue("X1"), b.getFieldValue("X2")),
+        xb = Math.max(b.getFieldValue("X1"), b.getFieldValue("X2")),
+        ya = Math.min(b.getFieldValue("Y1"), b.getFieldValue("Y2")),
+        yb = Math.max(b.getFieldValue("Y1"), b.getFieldValue("Y2"));
+    if (b.getFieldValue("FILL") === "TRUE")
+      return "for (int __y = " + nxY(yb) + "; __y <= " + nxY(ya) + "; __y++) " +
+             "LineOut(" + xa + ", __y, " + xb + ", __y);\n";
+    return "RectOut(" + xa + ", " + nxY(yb) + ", " + (xb - xa) + ", " + (yb - ya) + ");\n";
+  };
+  nxc.forBlock["nxt_draw_circle"] = function (b) {
+    var x = Number(b.getFieldValue("X")), y = Number(b.getFieldValue("Y")),
+        r = Number(b.getFieldValue("R"));
+    if (b.getFieldValue("FILL") !== "TRUE")
+      return "CircleOut(" + x + ", " + nxY(y) + ", " + r + ");\n";
+    // rows of the disc, clipped to the screen
+    var rows = [];
+    for (var dy = -r; dy <= r; dy++) {
+      var yy = y + dy;
+      if (yy < 0 || yy > 63) continue;
+      var h = Math.round(Math.sqrt(r * r - dy * dy));
+      rows.push(nxLine(Math.max(0, x - h), yy, Math.min(99, x + h), yy) + "\n");
+    }
+    return rows.join("");
+  };
+
   // ---- Sound ----
   nxc.forBlock["nxt_tone"] = function (b) {
     return "PlayTone(" + b.getFieldValue("HZ") + ", " +
@@ -3947,6 +4276,30 @@ return $.__chunk_javascript;
   };
   nxc.forBlock["nxt_sound_stop"] = function () { return "StopSound();\n"; };
 
+  // ---- Bluetooth ----
+  // The leader writes to connection 1 and reads what the follower queued; the
+  // follower answers in a response mailbox and reads what the leader wrote.
+  nxc.forBlock["nxt_bt_role"] = function (b) {
+    return "// Bluetooth: this NXT is the " + b.getFieldValue("ROLE").toLowerCase() + "\n";
+  };
+  nxc.forBlock["nxt_bt_connected"] = function () {
+    return ["(BluetoothStatus(" + (btRole === "LEADER" ? 1 : 0) + ") == NO_ERR)", NONE];
+  };
+  nxc.forBlock["nxt_bt_send"] = function (b, g) {
+    var v = g.valueToCode(b, "NUM", NONE) || "0", q = b.getFieldValue("CH");
+    return (btRole === "LEADER" ? "SendRemoteNumber(1, " + q + ", " + v + ");\n"
+                                : "SendResponseNumber(" + q + ", " + v + ");\n");
+  };
+  nxc.forBlock["nxt_bt_last"] = function (b) {
+    if (!btNumbers) {
+      btNumbers = true;
+      extraTasks.push("long __btLast(byte q)\n{\n    long v;\n" +
+        "    if (ReceiveRemoteNumber(q, true, v) == NO_ERR) __btNum[q] = v;\n" +
+        "    return __btNum[q];\n}\n");
+    }
+    return ["__btLast(" + b.getFieldValue("CH") + ")", ATOMIC];
+  };
+
   // ---- Sensors ----
   nxc.forBlock["nxt_setsensor"] = function (b) {
     var n = b.getFieldValue("S"), t = b.getFieldValue("T");
@@ -3955,6 +4308,8 @@ return $.__chunk_javascript;
     if (t === "LIGHT") return "SetSensorLight(" + port + ");\n";
     if (t === "SOUND") return "SetSensorSound(" + port + ");\n";
     if (t === "US")    return "SetSensorLowspeed(" + port + ");\n";
+    if (t === "COLOR") return "SetSensorColorFull(" + port + ");\n";
+    if (t === "COLOR_LIGHT") return "SetSensorColorRed(" + port + ");\n";
     // Ambient light is the lamp switched off, which is a type plus a mode.
     return "SetSensorType(" + port + ", SENSOR_TYPE_LIGHT_INACTIVE);\n" +
            "SetSensorMode(" + port + ", SENSOR_MODE_PERCENT);\n";
@@ -3963,6 +4318,15 @@ return $.__chunk_javascript;
     return ["SENSOR_" + b.getFieldValue("S") + " == 1", NONE];
   };
   nxc.forBlock["nxt_sensor_value"] = function (b) {
+    return ["Sensor(IN_" + b.getFieldValue("S") + ")", ATOMIC];
+  };
+  nxc.forBlock["nxt_color_is"] = function (b) {
+    return ["Sensor(IN_" + b.getFieldValue("S") + ") == " + b.getFieldValue("COLOR"), NONE];
+  };
+  nxc.forBlock["nxt_light_level"] = function (b) {
+    return ["Sensor(IN_" + b.getFieldValue("S") + ")", ATOMIC];
+  };
+  nxc.forBlock["nxt_sound_level"] = function (b) {
     return ["Sensor(IN_" + b.getFieldValue("S") + ")", ATOMIC];
   };
   nxc.forBlock["nxt_distance"] = function (b) {
@@ -4035,12 +4399,18 @@ return $.__chunk_javascript;
       { kind: "block", type: "rcx_off" }, SEP, { kind: "block", type: "rcx_setpower" } ] },
     { name: "Movement", colour: C_MOVE, contents: [
       { kind: "label", text: "the first motor is the left wheel" },
+      { kind: "block", type: "rcx_move_motors" }, SEP,
       { kind: "block", type: "rcx_move_for" }, { kind: "block", type: "rcx_turn" }, SEP,
       { kind: "block", type: "rcx_move_start" }, { kind: "block", type: "rcx_move_stop" }, SEP,
-      { kind: "block", type: "rcx_move_speed" },
-      { kind: "block", type: "rcx_move_motors" } ] },
+      { kind: "block", type: "rcx_move_speed" } ] },
     { name: "Sound", colour: C_SOUND, contents: [
       { kind: "block", type: "rcx_playsound" } ] },
+    { name: "IR Messages", colour: C_IR, contents: [
+      { kind: "block", type: "rcx_ir_power" }, SEP,
+      { kind: "block", type: "rcx_ir_send", inputs: {
+          MSG: { shadow: { type: "math_number", fields: { NUM: 42 } } } } },
+      { kind: "block", type: "rcx_ir_clear" }, SEP,
+      { kind: "block", type: "rcx_ir_receive" } ] },
     { name: "Control", colour: C_CTRL, contents: [
       { kind: "block", type: "rcx_wait" }, { kind: "block", type: "rcx_wait_until" }, SEP,
       { kind: "block", type: "rcx_repeat" }, { kind: "block", type: "rcx_forever" },
@@ -4074,12 +4444,23 @@ return $.__chunk_javascript;
       { kind: "block", type: "nxt_motor_degrees" } ] },
     { name: "Movement", colour: C_MOVE, contents: [
       { kind: "label", text: "the first motor is the left wheel" },
+      { kind: "block", type: "nxt_move_motors" }, SEP,
       { kind: "block", type: "nxt_move_for" }, { kind: "block", type: "nxt_turn" }, SEP,
-      { kind: "block", type: "nxt_move_start" }, { kind: "block", type: "nxt_move_stop" }, SEP,
-      { kind: "block", type: "nxt_move_motors" } ] },
+      { kind: "block", type: "nxt_move_start" }, { kind: "block", type: "nxt_move_stop" } ] },
     { name: "Display", colour: C_DISP, contents: [
       { kind: "block", type: "nxt_disp_text" }, { kind: "block", type: "nxt_disp_num" }, SEP,
-      { kind: "block", type: "nxt_disp_clear" } ] },
+      { kind: "block", type: "nxt_disp_clear" }, SEP,
+      { kind: "label", text: "Pictures" },
+      { kind: "block", type: "nxt_picture" }, SEP,
+      { kind: "label", text: "Draw your own" },
+      { kind: "block", type: "nxt_draw_pixel" }, { kind: "block", type: "nxt_draw_line" },
+      { kind: "block", type: "nxt_draw_box" }, { kind: "block", type: "nxt_draw_circle" } ] },
+    { name: "Bluetooth", colour: C_IR, contents: [
+      { kind: "block", type: "nxt_bt_role" }, SEP,
+      { kind: "block", type: "nxt_bt_connected" }, SEP,
+      { kind: "block", type: "nxt_bt_send", inputs: {
+          NUM: { shadow: { type: "math_number", fields: { NUM: 42 } } } } },
+      { kind: "block", type: "nxt_bt_last" } ] },
     { name: "Sound", colour: C_SOUND, contents: [
       { kind: "block", type: "nxt_note" }, { kind: "block", type: "nxt_tone" }, SEP,
       { kind: "block", type: "nxt_sound_stop" } ] },
@@ -4092,8 +4473,10 @@ return $.__chunk_javascript;
       { kind: "block", type: "rcx_stop" } ] },
     { name: "Sensors", colour: C_SENSE, contents: [
       { kind: "block", type: "nxt_setsensor" }, SEP,
-      { kind: "block", type: "nxt_touched" }, { kind: "block", type: "nxt_sensor_value" },
+      { kind: "block", type: "nxt_touched" }, { kind: "block", type: "nxt_color_is" }, SEP,
+      { kind: "block", type: "nxt_light_level" }, { kind: "block", type: "nxt_sound_level" },
       { kind: "block", type: "nxt_distance" }, SEP,
+      { kind: "block", type: "nxt_sensor_value" }, SEP,
       { kind: "block", type: "nxt_button" }, SEP,
       { kind: "block", type: "nxt_timer" }, { kind: "block", type: "nxt_timer_reset" } ] },
     { name: "Operators", colour: C_OPS, contents: [
@@ -4109,7 +4492,7 @@ return $.__chunk_javascript;
   // The order Robot Inventor lists them in: the hardware first, Events in
   // the middle, then the programming blocks. Any category not named here keeps
   // its place at the end, so adding one later cannot silently drop it.
-  var ORDER = ["Motors", "Movement", "Display", "Sound", "Events", "Control",
+  var ORDER = ["Motors", "Movement", "Display", "Sound", "IR Messages", "Bluetooth", "Events", "Control",
                "Sensors", "Operators", "Variables", "My Blocks"];
   function inOrder(cats) {
     var out = [], i, j;
@@ -4252,7 +4635,7 @@ return $.__chunk_javascript;
 
   // ---- output -------------------------------------------------------------
   var KEYWORDS = /\b(task|repeat|while|until|if|else|true|int|void|sub|start|stop|return)\b/g;
-  var BUILTINS = /\b(OnFwd|OnRev|Off|Coast|SetPower|Wait|PlaySound|PlayTone|StopSound|SetSensor|SetSensorTouch|SetSensorLight|SetSensorSound|SetSensorLowspeed|SetSensorType|SetSensorMode|ClearSensor|Sensor|SensorUS|Random|SensorValueRaw|StopAllTasks|RotateMotor|ResetTachoCount|MotorTachoCount|TextOut|NumOut|ClearScreen|ButtonPressed|CurrentTick|Float|On)\b/g;
+  var BUILTINS = /\b(OnFwd|OnRev|Off|Coast|SetPower|Wait|PlaySound|PlayTone|StopSound|SetSensor|SetSensorTouch|SetSensorLight|SetSensorSound|SetSensorLowspeed|SetSensorColorFull|SetSensorColorRed|SendRemoteNumber|SendResponseNumber|ReceiveRemoteNumber|BluetoothStatus|SetSensorType|SetSensorMode|ClearSensor|Sensor|SensorUS|Random|SensorValueRaw|StopAllTasks|RotateMotor|ResetTachoCount|MotorTachoCount|TextOut|NumOut|ClearScreen|LineOut|CircleOut|RectOut|PointOut|ButtonPressed|CurrentTick|Float|On)\b/g;
   var CONSTS = /\b(OUT_[A-Z]+|IN_[0-9]|SOUND_[A-Z_]+|SENSOR_[A-Z0-9_]+|LCD_LINE[0-9]|TONE_[A-Z]+[0-9]|BTN[A-Z]+)\b/g;
 
   function esc(s) {
@@ -4413,7 +4796,7 @@ return $.__chunk_javascript;
     ws.updateToolbox(toolboxOf(d.cats));
     document.getElementById("title").textContent = d.title;
     document.getElementById("tag").textContent = d.tag;
-    document.getElementById("miSaveExt").textContent = "." + d.ext;
+    document.getElementById("miSave").title = "Save as ." + d.ext + " (Ctrl/Cmd+S)";
     document.getElementById("btnCopy").textContent = "Copy " + d.lang;
     document.getElementById("note-nqc").hidden = (m !== "nqc");
     document.getElementById("note-nxc").hidden = (m !== "nxc");
@@ -4439,37 +4822,18 @@ return $.__chunk_javascript;
     regenerate();
   }
 
-  // ---- the File menu -------------------------------------------------------
-  var menu = document.getElementById("menu");
-  var btnMenu = document.getElementById("btnMenu");
-
-  function closeMenu() {
-    menu.hidden = true;
-    btnMenu.setAttribute("aria-expanded", "false");
-  }
-  function toggleMenu() {
-    var open = menu.hidden;
-    menu.hidden = !open;
-    btnMenu.setAttribute("aria-expanded", open ? "true" : "false");
-  }
-  btnMenu.onclick = function (ev) { ev.stopPropagation(); toggleMenu(); };
-  document.addEventListener("click", function (ev) {
-    if (!menu.hidden && !menu.contains(ev.target) && ev.target !== btnMenu)
-      closeMenu();
-  });
-  document.addEventListener("keydown", function (ev) {
-    if (ev.key === "Escape") closeMenu();
-  });
-
-  function item(id, fn) {
-    document.getElementById(id).onclick = function () { closeMenu(); fn(); };
-  }
-  item("miNew", newProject);
+  // ---- the buttons in the header --------------------------------------------
+  function item(id, fn) { document.getElementById(id).onclick = function () { fn(); }; }
   item("miExample", loadExample);
   item("miOpen", pickFile);
   item("miSave", function () { saveProgram(); });
   item("miSaveAs", function () { saveAs(); });
-  item("miClear", function () { dropViewed(); ws.clear(); regenerate(); });
+  // Clear also forgets the file it came from, so a later Save cannot put an
+  // empty program over it.
+  item("miClear", function () {
+    fileName = "program"; fileHandle = null;
+    dropViewed(); ws.clear(); regenerate();
+  });
   // ---- saving -------------------------------------------------------------
   // nqc and nbc choose what to do by the extension, so the language decides
   // it, not the typing. "robot", "robot.txt" and "robot.nxc" all become
@@ -4648,7 +5012,7 @@ return $.__chunk_javascript;
   window.__setName = function (n) { fileName = baseOf(n); };
   window.__locked = locked;
   window.__viewing = function () { return viewing; };
-  window.__menu = { open: toggleMenu, close: closeMenu, newProject: newProject };
+  window.__menu = { newProject: newProject };
   window.__ws = ws;
 })();
 </script>

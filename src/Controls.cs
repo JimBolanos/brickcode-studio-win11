@@ -472,7 +472,9 @@ namespace BrickCode
             "task","sub","inline","if","else","while","do","for","repeat",
             "until","break","continue","return","switch","case","default",
             "goto","start","stop","monitor","acquire","catch","asm","abs",
-            "sign","int","void","const","bool","true","false"
+            "sign","int","void","const","bool","true","false",
+            "long","byte","char","short","unsigned","float","string","struct",
+            "typedef","safecall","enum"
         };
 
         static readonly string[] Builtins =
@@ -500,7 +502,17 @@ namespace BrickCode
             "SOUND_DOUBLE_BEEP","SOUND_DOWN","SOUND_UP","SOUND_LOW_BEEP",
             "SOUND_FAST_UP","DISPLAY_WATCH","DISPLAY_SENSOR_1",
             "DISPLAY_SENSOR_2","DISPLAY_SENSOR_3","DISPLAY_OUT_A",
-            "DISPLAY_OUT_B","DISPLAY_OUT_C","TX_POWER_LO","TX_POWER_HI"
+            "DISPLAY_OUT_B","DISPLAY_OUT_C","TX_POWER_LO","TX_POWER_HI",
+            "TextOut","NumOut","ClearScreen","LineOut","CircleOut","RectOut",
+            "PointOut","RotateMotor","ResetTachoCount","MotorTachoCount",
+            "ButtonPressed","CurrentTick","SetSensorTouch","SetSensorLight",
+            "SetSensorSound","SetSensorLowspeed","SetSensorColorFull",
+            "SetSensorColorRed","Sensor","SensorUS","StopSound","PlayTone",
+            "SendRemoteNumber","SendResponseNumber","ReceiveRemoteNumber",
+            "BluetoothStatus","OUT_AB","OUT_AC","OUT_BC","OUT_ABC","IN_1",
+            "IN_2","IN_3","IN_4","LCD_LINE1","LCD_LINE2","LCD_LINE3",
+            "LCD_LINE4","LCD_LINE5","LCD_LINE6","LCD_LINE7","LCD_LINE8",
+            "MAILBOX1","MAILBOX2","MAILBOX3","MAILBOX4","MAILBOX5"
         };
 
         static CodeEditor()

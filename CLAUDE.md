@@ -1,8 +1,11 @@
 # Notes for Claude
 
-BrickCode Studio, Windows edition: a C# WinForms editor for the LEGO RCX and
-Scout. **NQC only** — this package carries `nqc.exe` and no `nbc`, so there is
-no NXT and no NXC anywhere in it.
+BrickCode Studio, Windows edition: a C# WinForms editor for the LEGO RCX, the
+Scout and the NXT, plus an entry point to the EV3 (Pybricks) block editor.
+RCX and Scout use NQC (`nqc.exe`) through the USB tower. The NXT uses NXC:
+`nbc.exe` compiles, `nxt_tool.py` talks LCP over USB (pyusb + libusb-1.0,
+WinUSB or libusbK driver). The EV3 is Python only: the app opens
+`blocks\pybricks-blocks.html` and sends nothing to the brick.
 
 The other edition, GTK4 and C, for Linux and macOS, lives in
 [brickcode-studio-apple-linux](https://github.com/JimBolanos/brickcode-studio-apple-linux)
@@ -26,26 +29,34 @@ copy was refreshed by hand. Both scripts now guard against that: `build.bat`
 refreshes it, and `package.bat` refuses to zip an exe older than any file under
 `src\`. Do not work around that refusal — rebuild.
 
-## The block editor
+## The block editors
 
-`package\BrickCodeStudio\blocks\brickcode-blocks.html` is **generated**. Do not
-edit it here. It is built in the other repo:
+The three pages in `package\BrickCodeStudio\blocks\` are **generated**. Do not
+edit them here. They are built in the other repo and copied over:
 
 ```
-cd blocks
-python3 build.py
-python3 pin.py nqc-only /path/to/this/repo/package/BrickCodeStudio/blocks/brickcode-blocks.html
+blocks/brickcode-blocks-rcx.html  ->  blocks\brickcode-blocks.html      (data-pin="nqc-only")
+blocks/brickcode-blocks-nxt.html  ->  blocks\brickcode-blocks-nxt.html  (data-pin="nxc-only")
+pybricks/pybricks-blocks.html     ->  blocks\pybricks-blocks.html
 ```
 
-`pin.py` sets `data-pin="nqc-only"` on `<html>`, which pins the editor to NQC
-and takes the language switch away. The pin has to live inside the file:
-`OpenBlockEditor()` opens the page with `ShellExecute`, which resolves a
-`file:` URL back to a plain path before the browser sees it and loses
-everything after the `#`. A URL fragment cannot be relied on here, and cannot
-override a pin.
+The pin is an attribute on `<html>` inside each file, which pins the editor to
+one language and removes the language switch. It has to live inside the file:
+`OpenPage()` opens the page with `ShellExecute`, which resolves a `file:` URL
+back to a plain path and loses everything after the `#`. That is why there are
+separate files instead of a URL fragment.
 
-That matters because this edition has no `nbc`. Offering NXC would only let
-someone build a program the app in front of them cannot compile.
+## The NXT
+
+`nxt_tool.py` has `info`, `beep`, `upload [run]`, `run`, `stop`, `list`.
+`Compile(run)` in `Main.cs` chains `NbcStep` (nbc.exe, `-O=out.rxe`) and
+`NxtStep` (upload, optional run). nbc prints `# Status` noise, which `Post()`
+filters, and errors as `File "x" ; line N` / `# Error: ...`, which it parses
+to highlight the line. Hardware-tested on firmware 1.31 with WinUSB. Do not
+swap an NXT-G user's driver for libusbK.
+
+nbc.exe is MPL 1.1 (John Hansen, BricxCC), bundled unchanged; see
+`licenses\nbc-LICENSE-MPL-1.1.txt`.
 
 ## The USB tower
 

@@ -46,7 +46,7 @@ namespace BrickCode
         public const int FirmwareTimeoutMs = 420000;
 
         public static readonly string[] Targets =
-            { "RCX2", "RCX", "CM", "Scout", "Spy", "Swan" };
+            { "RCX2", "RCX", "CM", "Scout", "Spy", "Swan", "NXT" };
 
         public static readonly string[] TargetNotes =
         {
@@ -55,8 +55,25 @@ namespace BrickCode
             "CyberMaster",
             "Scout (Droid Developer Kit)",
             "Spybotics",
-            "Swan"
+            "Swan",
+            "NXT — USB cable; nbc compiles, nxt_tool.py sends"
         };
+
+        public const string SampleNxt =
+            "// A first NXT program. Press F5, or the Compile & Run button.\r\n" +
+            "\r\n" +
+            "task main()\r\n" +
+            "{\r\n" +
+            "    ClearScreen();\r\n" +
+            "    TextOut(10, LCD_LINE4, \"Hello NXT!\");\r\n" +
+            "    PlayTone(880, 300);\r\n" +
+            "    Wait(300);\r\n" +
+            "\r\n" +
+            "    OnFwd(OUT_BC, 50);      // forward\r\n" +
+            "    Wait(1000);             // 1000 ms = 1 second\r\n" +
+            "    Off(OUT_BC);\r\n" +
+            "    Wait(1500);\r\n" +
+            "}\r\n";
 
         public const string Sample =
             "// A first program. Press F5, or the Compile & Run button.\r\n" +
@@ -221,6 +238,30 @@ namespace BrickCode
             A("rcx_tool.py is missing from this folder. It is what talks to the USB tower.",
               "Falta rcx_tool.py en esta carpeta. Es lo que habla con la torre USB.");
             A("Looking for the USB tower…", "Buscando la torre USB…");
+            A("NXT", "NXT");
+            A("NXT connected", "NXT conectado");
+            A("NXT — USB cable; nbc compiles, nxt_tool.py sends", "NXT — cable USB; nbc compila, nxt_tool.py envía");
+            A("Open program", "Abrir programa");
+            A("NXC programs", "Programas NXC");
+            A("Open NXC file", "Abrir archivo NXC");
+            A("Block editor (NXT)…", "Editor de bloques (NXT)…");
+            A("Pybricks block editor (EV3)…", "Editor de bloques Pybricks (EV3)…");
+            A("EV3 (Pybricks)", "EV3 (Pybricks)");
+            A("Compiling and sending…", "Compilando y enviando…");
+            A("Compiling and running…", "Compilando y ejecutando…");
+            A("Asking the NXT…", "Preguntando al NXT…");
+            A("'{0}' was not found. Put it next to this program.", "No se encontró '{0}'. Ponlo junto a este programa.");
+            A("nxt_tool.py is missing from this folder. It is what talks to the NXT over USB.",
+              "Falta nxt_tool.py en esta carpeta. Es lo que habla con el NXT por USB.");
+            A("Python was not found. Install Python 3 from the Microsoft Store, then start this program again - the NXT needs it.",
+              "No se encontró Python. Instálalo desde la Microsoft Store (Python 3) y vuelve a abrir este programa - el NXT lo necesita.");
+            A("This action is for the RCX. The NXT does not have it.", "Esta acción es del RCX. El NXT no la tiene.");
+            A("Block editor not found. It lives beside the exe, in blocks\\{0}.",
+              "No se encontró el editor de bloques. Está junto al exe, en blocks\\{0}.");
+            A("Block editor opened in your browser. Build the program there, press Save, then open the file here.",
+              "El editor de bloques se abrió en tu navegador. Arma el programa allí, pulsa Guardar y abre el archivo aquí.");
+            A("The EV3 editor writes Python. Save it there, then copy the .py to the EV3 (Pybricks).",
+              "El editor del EV3 escribe Python. Guárdalo allí y copia el .py al EV3 (Pybricks).");
             A("Serial tower on {0}: nqc talks to the brick by itself.",
               "Torre serial en {0}: nqc habla con el ladrillo por su cuenta.");
         }

@@ -1,13 +1,13 @@
 # BrickCode Studio Win11
 
-An NQC editor for the LEGO RCX and Scout, for **Windows 10 and 11**. Write a
-program, press **F5**, and it is compiled, downloaded and run on the brick. Every
-button on screen is an invocation of `nqc.exe`; there is nothing else in the middle.
+An editor for the LEGO RCX, Scout and **NXT**, for **Windows 10 and 11**, with an
+entry point to the **EV3** block editor (Pybricks). Write a program, press **F5**,
+and it is compiled, downloaded and run on the brick: `nqc.exe` for the RCX and
+Scout, `nbc.exe` and a USB tool for the NXT.
 
 This is the Windows build of [BrickCode Studio](https://github.com/JimBolanos/brickcode-studio-apple-linux),
-with the same interface and the same visual block editor, and NQC only — no NXC,
-no NXT. It carries everything it
-needs: the compiler, the RCX firmware files, the USB libraries and the tower driver.
+with the same interface and the same visual block editors. It carries everything it
+needs: both compilers, the RCX firmware files, the USB libraries and the tower driver.
 
 > Continues from [rcx-tower-gui](https://github.com/JimBolanos/rcx-tower-gui), the
 > earlier version of the same idea.
@@ -15,9 +15,8 @@ needs: the compiler, the RCX firmware files, the USB libraries and the tower dri
 ![BrickCode Studio on Windows](docs/screenshot-nqc-en.png)
 
 Prefer dragging blocks to typing? **File → Block editor…** opens it in your
-browser. It writes the NQC for you, and this edition pins it to NQC — the package
-carries `nqc` and not `nbc`, so offering NXC here would only build programs this
-app cannot compile.
+browser. It writes NQC for the RCX and Scout, or NXC when the brick is set to NXT.
+**File → Pybricks block editor (EV3)…** writes Python for the EV3.
 
 ![The visual block editor, writing NQC](docs/screenshot-blocks-en.png)
 

@@ -1,5 +1,5 @@
-BrickCode Studio - Windows edition (NQC only)
-=============================================
+BrickCode Studio - Windows edition (RCX, Scout, NXT and EV3)
+===========================================================
 
 Everything you need is in this folder. There is no installer: unzip and run.
 
@@ -29,6 +29,11 @@ BEFORE YOU START
                    say) into "Tower port" under Settings and nqc does
                    everything.
 
+  1b) NXT or EV3 instead of an RCX? You do not need the tower.
+     The NXT plugs in with its own USB cable. See "USING AN NXT" below.
+     The EV3 is programmed in Python with the Pybricks editor, see
+     "USING AN EV3" below.
+
   2) Python 3, from the Microsoft Store (search for "Python 3.13" or
      newer). It is the one piece that cannot be bundled. Everything else
      is here: nqc, the firmware files, the libraries and the driver.
@@ -47,7 +52,8 @@ STEPS
 
   4. In the program, press "Test tools".
      It should find all five: nqc.exe, python, rcx_tool.py,
-     libusb-1.0.dll and pyusb.
+     libusb-1.0.dll and pyusb. (In NXT mode it checks nbc.exe and
+     nxt_tool.py in the same way.)
 
   5. Switch the RCX on and point its IR window at the tower's, facing
      each other, 10 to 25 cm apart. Press "Test brick".
@@ -74,20 +80,58 @@ IF YOU WOULD RATHER DRAG BLOCKS THAN TYPE
 
   It works with no internet: the whole editor is that one file.
 
-  It writes NQC and only NQC, because this package carries nqc and not
-  nbc. There is no NXT here.
+  In RCX / Scout mode it writes NQC. In NXT mode (pick NXT as the brick,
+  or click NXT in the side bar) File -> Block editor (NXT)... opens the
+  NXC version of the editor instead.
 
   Saved programs keep their blocks inside, in a comment at the end, so
   you can open the same file in the editor again later and carry on
   building instead of starting over.
 
 
+USING AN NXT
+------------
+
+  1. Plug the NXT into the PC with its USB cable and switch it on.
+  2. Pick  NXT  as the brick (side bar or the Brick box). The editor
+     switches to NXC and loads a "Hello NXT!" sample.
+  3. Press "Test brick": it reports the protocol, the firmware and the
+     battery, and the NXT beeps.
+  4. Press F5. nbc.exe compiles the program, nxt_tool.py sends it over
+     USB, and with Run it starts on the brick.
+
+  The USB driver. Windows must give the NXT a libusb-compatible driver.
+  If you already use NXT-G, NXT-Scratch or BricxCC on this PC, check
+  first: it may already be WinUSB, which is exactly what is needed, and
+  nothing has to be changed. Only if Test brick says it cannot open the
+  NXT, run  driver\zadig-2.9.exe, choose "NXT" in the list and install
+  WinUSB. NXT-G and the LEGO software need their own driver, so do NOT
+  replace it on a PC where you still use them.
+
+  Test the whole chain first with  test-nxt.bat  (it uses nxt-test\).
+  The NXT must have firmware 1.28 or newer; 1.31 is the one tested.
+
+
+USING AN EV3
+------------
+
+  The EV3 runs Python through Pybricks, not NXC. Choose
+  File -> Pybricks block editor (EV3)... : it opens
+  blocks\pybricks-blocks.html. Build the program, press Save to get
+  the .py file, then run it from the Pybricks editor
+  (https://code.pybricks.com) with the EV3 on the Pybricks firmware.
+  This program does not send anything to the EV3 itself.
+
+
 WHAT IS IN HERE
 ---------------
 
   BrickCodeStudio.exe   the editor
-  blocks\               the visual block editor, one offline HTML file
-  nqc.exe               the NQC compiler
+  blocks\               the visual block editors (RCX, NXT, EV3), offline HTML
+  nqc.exe               the NQC compiler (RCX, Scout)
+  nbc.exe               the NXC compiler (NXT)
+  nxt_tool.py           what talks to the NXT over USB
+  test-nxt.bat          tests the NXT end to end
   rcx_tool.py           what talks to the USB tower
   usb\                  pyusb, already bundled (no pip needed)
   libusb-1.0.dll        the USB library rcx_tool uses

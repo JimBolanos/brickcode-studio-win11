@@ -103,6 +103,26 @@ namespace BrickCode
             @"^(?<file>[^:]+):(?<line>\d+):\s*(?<sev>Error|Warning)",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+        // nbc writes a file and line first, then the message
+        static readonly Regex NbcFileRe = new Regex(
+            "^File\\s+\"[^\"]*\"\\s*;\\s*line\\s+(?<line>\\d+)",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        int nbcLine;
+        bool nbcErrorShown;
+
+        /// True when the NXT is the target: the program is NXC, nbc compiles it
+        /// and nxt_tool.py carries it over the USB cable.
+        bool IsNxt
+        {
+            get { return settings.Target.SelectedItem == "NXT"; }
+        }
+
+        void SelectTarget(string name)
+        {
+            for (int t = 0; t < App.Targets.Length; t++)
+                if (App.Targets[t] == name) { settings.Target.Select(t, true); return; }
+        }
+
         public MainForm()
         {
             SuspendLayout();
@@ -118,7 +138,7 @@ namespace BrickCode
             LoadSettings();
             ApplyTheme();
 
-            editor.Code = App.Sample;
+            editor.Code = IsNxt ? App.SampleNxt : App.Sample;
             dirty = false;
             UpdateChip();
 
@@ -169,6 +189,8 @@ namespace BrickCode
 
             Controls.Add(side);
             side.Bricks.Add(new SideItem { Id = "tower", Label = "RCX tower", IsDot = true, DotLevel = 0 });
+            side.Bricks.Add(new SideItem { Id = "nxt", Label = "NXT", IsDot = true, DotLevel = 0 });
+            side.Bricks.Add(new SideItem { Id = "ev3", Label = "EV3 (Pybricks)", Swatch = Color.FromArgb(114, 67, 190) });
             side.Tools.Add(new SideItem { Id = "remote", Label = "Remote" });
             side.Tools.Add(new SideItem { Id = "datalog", Label = "Datalog" });
             side.Tools.Add(new SideItem { Id = "firmware", Label = "Firmware…" });
@@ -204,7 +226,7 @@ namespace BrickCode
 
             Controls.Add(settings);
             settings.Visible = false;
-            settings.Target.SelectionChanged += delegate { settings.CardTop.Invalidate(); UpdateMode(); };
+            settings.Target.SelectionChanged += delegate { TargetChanged(); };
             settings.ThemeDd.SelectionChanged += delegate
             {
                 dark = settings.ThemeDd.SelectedIndex == 1;
@@ -293,6 +315,8 @@ namespace BrickCode
             side.BricksTitle = I18n.T("Bricks");
             side.ToolsTitle = I18n.T("Tools");
             side.Bricks[0].Label = I18n.T("RCX tower");
+            side.Bricks[1].Label = I18n.T("NXT");
+            side.Bricks[2].Label = I18n.T("EV3 (Pybricks)");
             string[] toolIds = { "remote", "datalog", "firmware", "testbrick", "testtools" };
             string[] toolNames = { "Remote", "Datalog", "Firmware…", "Test brick", "Test tools" };
             Color[] toolColors = { Ui.P.Yellow, Ui.P.Red, Ui.P.Muted, Ui.P.Green, Ui.P.Blue };
@@ -309,7 +333,6 @@ namespace BrickCode
             console.ClearBtn.Text = I18n.T("Clear");
             console.ApplyTheme();
 
-            status.RightText = I18n.T("NQC for the RCX and Scout  ·  compiled and sent by nqc");
             if (string.IsNullOrEmpty(status.LeftText) || status.Level == 0)
                 status.LeftText = I18n.T("Ready.");
 
@@ -326,9 +349,32 @@ namespace BrickCode
 
         void UpdateMode()
         {
-            tb.ModeText = "NQC  ·  RCX / Scout";
+            tb.ModeText = IsNxt ? "NXC  ·  NXT" : "NQC  ·  RCX / Scout";
+            status.RightText = IsNxt
+                ? I18n.T("NXC for the NXT  ·  compiled by nbc, sent over USB")
+                : I18n.T("NQC for the RCX and Scout  ·  compiled and sent by nqc");
+            status.Invalidate();
             tb.Invalidate();
             settings.CardTop.Invalidate();
+        }
+
+        /// Switching between the RCX and the NXT: an untouched sample program
+        /// follows the target, and the status dots start over.
+        void TargetChanged()
+        {
+            if (filePath == null && !dirty)
+            {
+                editor.Code = IsNxt ? App.SampleNxt : App.Sample;
+                dirty = false;
+                UpdateChip();
+            }
+            side.Bricks[0].DotLevel = 0;
+            side.Bricks[1].DotLevel = 0;
+            brickKey = "No brick connected";
+            tb.StatusLevel = 0;
+            tb.StatusText = I18n.T(brickKey);
+            side.Invalidate();
+            UpdateMode();
         }
 
         void UpdateChip()
@@ -355,7 +401,7 @@ namespace BrickCode
             brickKey = text;
             tb.StatusLevel = level;
             tb.StatusText = I18n.T(text);
-            side.Bricks[0].DotLevel = level;
+            side.Bricks[IsNxt ? 1 : 0].DotLevel = level;
             side.Invalidate();
             Relayout();
         }
@@ -461,7 +507,9 @@ namespace BrickCode
             AddItem(m, I18n.T("Save"), delegate { Save(false); });
             AddItem(m, I18n.T("Save as…"), delegate { Save(true); });
             m.Items.Add(new ToolStripSeparator());
-            AddItem(m, I18n.T("Block editor…"), delegate { OpenBlockEditor(); });
+            AddItem(m, IsNxt ? I18n.T("Block editor (NXT)…") : I18n.T("Block editor…"),
+                    delegate { OpenBlockEditor(); });
+            AddItem(m, I18n.T("Pybricks block editor (EV3)…"), delegate { OpenPybricksEditor(); });
             m.Items.Add(new ToolStripSeparator());
             AddItem(m, I18n.T("About"), delegate { new AboutForm(this).ShowDialog(this); });
             m.Show(chip, new Point(0, chip.Height + 2));
@@ -472,21 +520,35 @@ namespace BrickCode
            embedded view: a WebView2 control would mean a runtime to install
            on every machine, and this package is deliberately drop-and-run.
 
-           The copy in this package is built pinned to NQC, so the switch to
-           the NXT language is not there at all: this edition carries nqc and
-           not nbc, and a program in a language it cannot compile would be a
-           dead end. The pin is an attribute inside the file rather than a
-           "#nqc-only" on the end of the address, because ShellExecute turns
-           a file: URL back into a plain path before the browser sees it and
-           loses everything after the "#" on the way. */
+           There are two copies, one per language, and the file name picks
+           the language: brickcode-blocks.html is pinned to NQC (RCX and
+           Scout) and brickcode-blocks-nxt.html is pinned to NXC (NXT). The
+           pin is an attribute inside each file rather than a "#nqc-only"
+           on the end of the address, because ShellExecute turns a file: URL
+           back into a plain path before the browser sees it and loses
+           everything after the "#" on the way. */
         void OpenBlockEditor()
         {
-            string page = Path.Combine(Path.Combine(AppDir, "blocks"),
-                                       "brickcode-blocks.html");
+            OpenPage(IsNxt ? "brickcode-blocks-nxt.html" : "brickcode-blocks.html",
+                     "Block editor opened in your browser. Build the program "
+                     + "there, press Save, then open the file here.");
+        }
+
+        /// The EV3 editor only writes Python: the .py goes to the brick with
+        /// Pybricks, which is outside this program.
+        void OpenPybricksEditor()
+        {
+            OpenPage("pybricks-blocks.html",
+                     "The EV3 editor writes Python. Save it there, then copy the .py to the EV3 (Pybricks).");
+        }
+
+        void OpenPage(string file, string okMessage)
+        {
+            string page = Path.Combine(Path.Combine(AppDir, "blocks"), file);
             if (!File.Exists(page))
             {
-                Log(I18n.T("Block editor not found. It lives beside the exe, "
-                           + "in blocks\\brickcode-blocks.html."), Ui.P.LogErr, true);
+                Log(I18n.T("Block editor not found. It lives beside the exe, in blocks\\{0}.", file),
+                    Ui.P.LogErr, true);
                 return;
             }
             try
@@ -494,8 +556,7 @@ namespace BrickCode
                 ProcessStartInfo psi = new ProcessStartInfo(page);
                 psi.UseShellExecute = true;        /* let Windows pick the browser */
                 Process.Start(psi);
-                Log(I18n.T("Block editor opened in your browser. Build the program "
-                           + "there, press Save, then open the file here."), Ui.P.LogInfo, false);
+                Log(I18n.T(okMessage), Ui.P.LogInfo, false);
             }
             catch (Exception ex)
             {
@@ -528,7 +589,7 @@ namespace BrickCode
         {
             if (!ConfirmDiscard()) return;
             filePath = null;
-            editor.Code = App.Sample;
+            editor.Code = IsNxt ? App.SampleNxt : App.Sample;
             dirty = false;
             editor.SetErrorLine(-1);
             UpdateChip();
@@ -539,12 +600,19 @@ namespace BrickCode
             if (!ConfirmDiscard()) return;
             using (OpenFileDialog d = new OpenFileDialog())
             {
-                d.Title = I18n.T("Open NQC file");
-                d.Filter = I18n.T("NQC programs") + " (*.nqc)|*.nqc|" +
-                           I18n.T("All files") + " (*.*)|*.*";
+                d.Title = I18n.T(IsNxt ? "Open NXC file" : "Open NQC file");
+                d.Filter = IsNxt
+                    ? I18n.T("NXC programs") + " (*.nxc)|*.nxc|" + I18n.T("NQC programs") + " (*.nqc)|*.nqc|" +
+                      I18n.T("All files") + " (*.*)|*.*"
+                    : I18n.T("NQC programs") + " (*.nqc)|*.nqc|" + I18n.T("NXC programs") + " (*.nxc)|*.nxc|" +
+                      I18n.T("All files") + " (*.*)|*.*";
                 if (d.ShowDialog(this) != DialogResult.OK) return;
                 try
                 {
+                    // the extension says which brick the program is for
+                    string ext = Path.GetExtension(d.FileName).ToLowerInvariant();
+                    if (ext == ".nxc" && !IsNxt) SelectTarget("NXT");
+                    else if (ext == ".nqc" && IsNxt) SelectTarget("RCX2");
                     editor.Code = File.ReadAllText(d.FileName);
                     filePath = d.FileName;
                     dirty = false;
@@ -565,10 +633,12 @@ namespace BrickCode
                 using (SaveFileDialog d = new SaveFileDialog())
                 {
                     d.Title = I18n.T("Save program");
-                    d.Filter = I18n.T("NQC programs") + " (*.nqc)|*.nqc|" +
-                               I18n.T("All files") + " (*.*)|*.*";
-                    d.DefaultExt = "nqc";
-                    d.FileName = filePath == null ? "program.nqc" : Path.GetFileName(filePath);
+                    d.Filter = IsNxt
+                        ? I18n.T("NXC programs") + " (*.nxc)|*.nxc|" + I18n.T("All files") + " (*.*)|*.*"
+                        : I18n.T("NQC programs") + " (*.nqc)|*.nqc|" + I18n.T("All files") + " (*.*)|*.*";
+                    d.DefaultExt = IsNxt ? "nxc" : "nqc";
+                    d.FileName = filePath == null ? (IsNxt ? "program.nxc" : "program.nqc")
+                                                  : Path.GetFileName(filePath);
                     if (d.ShowDialog(this) != DialogResult.OK) return false;
                     filePath = d.FileName;
                 }
@@ -616,12 +686,20 @@ namespace BrickCode
                     side.Invalidate();
                     Relayout();
                     break;
+                case "tower":
+                    if (IsNxt) SelectTarget("RCX2");
+                    DetectPort();
+                    break;
+                case "nxt":
+                    if (!IsNxt) SelectTarget("NXT");
+                    TestBrick();
+                    break;
+                case "ev3": OpenPybricksEditor(); break;
                 case "remote": OpenRemote(); break;
                 case "datalog": Brick("datalog", null, 60000, "Running command…"); break;
                 case "firmware": PickFirmware(); break;
                 case "testbrick": TestBrick(); break;
                 case "testtools": CheckTools(); break;
-                case "tower": DetectPort(); break;
             }
         }
 
@@ -706,12 +784,23 @@ namespace BrickCode
 
         void TestBrick()
         {
-            Brick("ping", null, 25000, "Asking the brick…");
+            Brick("ping", null, 25000, IsNxt ? "Asking the NXT…" : "Asking the brick…");
         }
 
         void CheckTools()
         {
             Log(I18n.T("Checking the tools…"), Ui.P.LogDim, false);
+            if (IsNxt)
+            {
+                Found("nbc.exe", FindNbc());
+                Found("python", FindPython());
+                Found("nxt_tool.py", FindNxtTool());
+                string ndll = Path.Combine(AppDir, "libusb-1.0.dll");
+                Found("libusb-1.0.dll", File.Exists(ndll) ? ndll : null);
+                string npyusb = Path.Combine(Path.Combine(AppDir, "usb"), "core.py");
+                Found("pyusb", File.Exists(npyusb) ? Path.GetDirectoryName(npyusb) : null);
+                return;
+            }
             Found("nqc.exe", FindNqc());
             if (SerialTower())
             {
@@ -821,6 +910,21 @@ namespace BrickCode
             editor.SetErrorLine(-1);
             List<Step> steps = new List<Step>();
 
+            if (IsNxt)
+            {
+                // A failed compile must not leave an old program to be sent.
+                string rxe = Path.ChangeExtension(filePath, ".rxe");
+                try { if (File.Exists(rxe)) File.Delete(rxe); } catch (Exception) { }
+                nbcLine = 0;
+                nbcErrorShown = false;
+                steps.Add(NbcStep(filePath, rxe));
+                Step up = NxtStep(60000, "upload", rxe);
+                if (run) up.Args.Add("run");
+                steps.Add(up);
+                RunSteps(steps, run ? "Compiling and running…" : "Compiling and sending…");
+                return;
+            }
+
             if (SerialTower())
             {
                 Step s = NqcStep("-pgm", SlotText(), "-d", filePath);
@@ -842,6 +946,30 @@ namespace BrickCode
         void Brick(string action, string arg, int timeout, string busyKey)
         {
             List<Step> steps = new List<Step>();
+            if (IsNxt)
+            {
+                switch (action)
+                {
+                    case "ping":
+                    case "tower": steps.Add(NxtStep(timeout, "info")); break;
+                    case "clear": steps.Add(NxtStep(timeout, "stop")); break;
+                    case "run":
+                        if (filePath == null)
+                        {
+                            Log(I18n.T("Save the program first - the compiler works on a file, not on the editor buffer."),
+                                Ui.P.LogInfo, false);
+                            return;
+                        }
+                        steps.Add(NxtStep(timeout, "run", Path.GetFileNameWithoutExtension(filePath)));
+                        break;
+                    default:
+                        Log(I18n.T("This action is for the RCX. The NXT does not have it."),
+                            Ui.P.LogInfo, false);
+                        return;
+                }
+                RunSteps(steps, busyKey);
+                return;
+            }
             if (SerialTower())
             {
                 switch (action)
@@ -945,6 +1073,22 @@ namespace BrickCode
             return File.Exists(p) ? p : null;
         }
 
+        string FindNbc()
+        {
+            return FindOnPath("nbc.exe", new string[]
+            {
+                AppDir,
+                Path.Combine(AppDir, "nbc"),
+                Path.Combine(AppDir, "bin")
+            });
+        }
+
+        string FindNxtTool()
+        {
+            string p = Path.Combine(AppDir, "nxt_tool.py");
+            return File.Exists(p) ? p : null;
+        }
+
         static string Quote(string a)
         {
             if (a == null) return "\"\"";
@@ -974,6 +1118,33 @@ namespace BrickCode
             s.Args.Add("-T" + settings.Target.SelectedItem);
             string port = settings.Port.Text.Trim();
             if (port.Length > 0) s.Args.Add("-S" + port);
+            for (int i = 0; i < args.Length; i++)
+                if (args[i] != null) s.Args.Add(args[i]);
+            return s;
+        }
+
+        /// nbc compiles NXC to a .rxe. It runs in the program's folder, like nqc.
+        Step NbcStep(string source, string output)
+        {
+            Step s = new Step();
+            s.Exe = FindNbc();
+            s.Shown = "nbc";
+            s.Args.Add(source);
+            s.Args.Add("-O=" + output);
+            return s;
+        }
+
+        /// nxt_tool.py talks to the NXT over USB: info, upload, run, stop.
+        Step NxtStep(int timeout, params string[] args)
+        {
+            Step s = new Step();
+            s.Exe = FindPython();
+            s.Shown = "python nxt_tool.py";
+            s.Timeout = timeout;
+            string py = s.Exe == null ? "" : Path.GetFileName(s.Exe);
+            if (string.Equals(py, "py.exe", StringComparison.OrdinalIgnoreCase))
+                s.Args.Add("-3");
+            s.Args.Add(FindNxtTool());
             for (int i = 0; i < args.Length; i++)
                 if (args[i] != null) s.Args.Add(args[i]);
             return s;
@@ -1041,13 +1212,26 @@ namespace BrickCode
                 if (s.Shown == "nqc")
                     Log(I18n.T("'{0}' was not found. Put it next to this program or in your PATH - every action in this window runs it.", "nqc.exe"),
                         Ui.P.LogErr, true);
+                else if (s.Shown == "nbc")
+                    Log(I18n.T("'{0}' was not found. Put it next to this program.", "nbc.exe"),
+                        Ui.P.LogErr, true);
+                else if (s.Shown == "python nxt_tool.py")
+                    Log(I18n.T("Python was not found. Install Python 3 from the Microsoft Store, then start this program again - the NXT needs it."),
+                        Ui.P.LogErr, true);
                 else
                     Log(I18n.T("Python was not found. Install Python 3 from the Microsoft Store, then start this program again - the USB tower needs it."),
                         Ui.P.LogErr, true);
                 SetStatus(I18n.T("Tool not found."), 2);
                 return false;
             }
-            if (s.Shown != "nqc" && FindRcxTool() == null)
+            if (s.Shown == "python nxt_tool.py" && FindNxtTool() == null)
+            {
+                Log(I18n.T("nxt_tool.py is missing from this folder. It is what talks to the NXT over USB."),
+                    Ui.P.LogErr, true);
+                SetStatus(I18n.T("Tool not found."), 2);
+                return false;
+            }
+            if (s.Shown == "python rcx_tool.py" && FindRcxTool() == null)
             {
                 Log(I18n.T("rcx_tool.py is missing from this folder. It is what talks to the USB tower."),
                     Ui.P.LogErr, true);
@@ -1063,7 +1247,7 @@ namespace BrickCode
 
             StringBuilder line = new StringBuilder("$ ");
             line.Append(s.Shown);
-            int skip = s.Shown == "nqc" ? 0 : s.Args.Count - CountToolArgs(s);
+            int skip = (s.Shown == "nqc" || s.Shown == "nbc") ? 0 : s.Args.Count - CountToolArgs(s);
             for (int i = skip; i < s.Args.Count; i++)
             {
                 line.Append(' ');
@@ -1085,7 +1269,7 @@ namespace BrickCode
             psi.RedirectStandardError = true;
             // rcx_tool.py loads libusb-1.0.dll and the bundled pyusb from the
             // program folder, so that is where it has to run.
-            psi.WorkingDirectory = s.Shown == "nqc" && filePath != null
+            psi.WorkingDirectory = (s.Shown == "nqc" || s.Shown == "nbc") && filePath != null
                 ? Path.GetDirectoryName(filePath)
                 : AppDir;
 
@@ -1135,7 +1319,8 @@ namespace BrickCode
             int n = s.Args.Count;
             for (int i = 0; i < s.Args.Count; i++)
                 if (s.Args[i] != null &&
-                    s.Args[i].EndsWith("rcx_tool.py", StringComparison.OrdinalIgnoreCase))
+                    (s.Args[i].EndsWith("rcx_tool.py", StringComparison.OrdinalIgnoreCase) ||
+                     s.Args[i].EndsWith("nxt_tool.py", StringComparison.OrdinalIgnoreCase)))
                     return n - i - 1;
             return n;
         }
@@ -1148,6 +1333,23 @@ namespace BrickCode
                 BeginInvoke((MethodInvoker)delegate
                 {
                     Color c = isErr ? Ui.P.LogErr : Ui.P.LogOut;
+                    // nbc narrates every step with "# Status:" lines: not useful here
+                    if (text.StartsWith("# Status", StringComparison.Ordinal)) return;
+                    Match nf = NbcFileRe.Match(text);
+                    if (nf.Success) int.TryParse(nf.Groups["line"].Value, out nbcLine);
+                    if (text.StartsWith("# Error", StringComparison.OrdinalIgnoreCase))
+                    {
+                        c = Ui.P.LogErr;
+                        if (!nbcErrorShown && nbcLine > 0)
+                        {
+                            nbcErrorShown = true;
+                            editor.SetErrorLine(nbcLine);
+                        }
+                    }
+                    else if (text.StartsWith("# Warning", StringComparison.OrdinalIgnoreCase))
+                        c = Ui.P.LogInfo;
+                    else if (text.StartsWith("#--", StringComparison.Ordinal))
+                        c = Ui.P.LogDim;
                     Match m = ErrorRe.Match(text);
                     if (m.Success)
                     {
@@ -1199,7 +1401,7 @@ namespace BrickCode
                         {
                             Log("✔ " + I18n.T("Finished."), Ui.P.LogOk, true);
                             SetStatus(I18n.T("Command finished."), 0);
-                            SetBrick(2, "RCX tower connected");
+                            SetBrick(2, IsNxt ? "NXT connected" : "RCX tower connected");
                         }
                         else
                         {

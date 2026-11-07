@@ -1,0 +1,18 @@
+nbc.exe - Next Byte Codes compiler
+==================================
+
+nbc (Next Byte Codes) compiles NXC and NBC programs for the LEGO MINDSTORMS NXT.
+It is part of BricxCC, by John Hansen.
+
+  Version bundled : nbc 1.2.1.r5, from the BricxCC test release 2011-10-24
+                    (supports the enhanced NXT firmware 1.31)
+  Licence         : Mozilla Public License, version 1.1
+  Full text       : https://www.mozilla.org/MPL/1.1/
+  Source code     : http://bricxcc.sourceforge.net/
+                    (the NXC / NBC sources are published there)
+
+The binary is bundled unchanged. Under the MPL 1.1 you are entitled to the
+source, which is available at the address above.
+
+LEGO and MINDSTORMS are trademarks of the LEGO Group. This is an independent
+project, not affiliated with or endorsed by the LEGO Group.

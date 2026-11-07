@@ -1,12 +1,12 @@
 # BrickCode Studio Win11
 
-Un editor de NQC para el LEGO RCX y el Scout, para **Windows 10 y 11**. Escribe un
-programa, pulsa **F5**, y se compila, se descarga y se ejecuta en el ladrillo. Cada
-botón de la ventana es una llamada a `nqc.exe`; no hay nada más en medio.
+Un editor para el LEGO RCX, el Scout y el **NXT**, para **Windows 10 y 11**, con
+acceso al editor de bloques del **EV3** (Pybricks). Escribe un programa, pulsa **F5**,
+y se compila, se descarga y se ejecuta en el ladrillo: `nqc.exe` para RCX y Scout,
+`nbc.exe` y una herramienta USB para el NXT.
 
 Esta es la versión para Windows de [BrickCode Studio](https://github.com/JimBolanos/brickcode-studio-apple-linux),
-con la misma interfaz y el mismo editor visual de bloques, y solo NQC — sin NXC ni
-NXT. Trae todo lo que necesita: el compilador, los firmwares del RCX, las librerías
+con la misma interfaz y los mismos editores visuales de bloques. Trae todo lo que necesita: los compiladores, los firmwares del RCX, las librerías
 USB y el driver de la torre.
 
 > Continúa a [rcx-tower-gui](https://github.com/JimBolanos/rcx-tower-gui), la versión

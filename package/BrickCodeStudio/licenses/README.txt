@@ -13,6 +13,18 @@ nqc.exe
   https://github.com/beckmx/lego-tower-rcx
   -> nqc-LICENSE-MPL-1.0.md
 
+nbc.exe
+  nbc 1.2.1.r5 (Next Byte Codes), the NXC / NBC compiler for the NXT,
+  by John Hansen, from the BricxCC test release 2011-10-24.
+  Mozilla Public License 1.1. Source: http://bricxcc.sourceforge.net/
+  Bundled unchanged.
+  -> nbc-LICENSE-MPL-1.1.txt
+
+nxt_tool.py
+  Written for BrickCode Studio. MIT License. Talks to the NXT over USB
+  with the LEGO Communication Protocol (LCP), which LEGO published in
+  the NXT Bluetooth Developer Kit. Uses pyusb and libusb below.
+
 rcx_tool.py, parse_rcx.py
   By beckmx, from https://github.com/beckmx/lego-tower-rcx
   Mozilla Public License 1.0.
@@ -45,6 +57,11 @@ firmware\firm0309.lgo, firm0328.lgo, firm0332.lgo
   The RCX firmware is LEGO's. These are the copies that ship with the
   nqc project and with beckmx/lego-tower-rcx, included here so the
   install works offline. They are redistributed the same way nqc does.
+
+blocks\*.html
+  The block editors, generated from the BrickCode Studio sources
+  (Blockly, Apache License 2.0, is inlined in them). MIT License for
+  the BrickCode Studio parts.
 
 examples\*.nqc
   Example programs from BrickCode Studio. MIT License.

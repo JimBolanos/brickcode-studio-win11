@@ -4,6 +4,19 @@ Versions before 2.1.1 were released as
 [rcx-tower-gui](https://github.com/JimBolanos/rcx-tower-gui), under the name
 RCX Tower GUI. They are kept here for the record.
 
+## Unreleased — NXT and EV3
+
+- **NXT mode.** Pick NXT as the brick: the editor switches to NXC, F5 compiles with the
+  bundled `nbc.exe` and sends over USB with `nxt_tool.py` (LCP, pyusb + libusb-1.0).
+  Test brick, Stop and Run work on the NXT; compiler errors are parsed and the line is
+  highlighted. Hardware-tested on firmware 1.31 with WinUSB.
+- **Block editors brought up to date:** RCX, NXT and Pybricks (EV3) pages, including the
+  IR messages, colour / light / sound, Bluetooth and "set movement motors" blocks.
+- **File → Pybricks block editor (EV3)…** opens the EV3 editor. The program is run from
+  the Pybricks editor; this app sends nothing to the EV3.
+- `test-nxt.bat` tests the whole NXT chain without the GUI.
+- `nbc.exe` bundled (MPL 1.1, unchanged); the NXT-only block page is no longer left out.
+
 ## 2.2.0 — blocks, for people who do not type yet
 
 - **Visual block editor**, under **File → Block editor…**. Drag blocks together and

@@ -12,13 +12,27 @@ needs: both compilers, the RCX firmware files, the USB libraries and the tower d
 > Continues from [rcx-tower-gui](https://github.com/JimBolanos/rcx-tower-gui), the
 > earlier version of the same idea.
 
-![BrickCode Studio on Windows](docs/screenshot-nqc-en.png)
+![BrickCode Studio on Windows: pick the brick](docs/screenshot-home-en.png)
+
+![The code screen, writing NQC for the RCX](docs/screenshot-nqc-en.png)
 
 Prefer dragging blocks to typing? **File → Block editor…** opens it in your
 browser. It writes NQC for the RCX and Scout, or NXC when the brick is set to NXT.
 **File → Pybricks block editor (EV3)…** writes Python for the EV3.
 
 ![The visual block editor, writing NQC](docs/screenshot-blocks-en.png)
+
+The **BLOCKS** button in the bottom bar asks which editor you want first:
+
+![The BLOCKS menu](docs/screenshot-blocks-menu-en.png)
+
+---
+
+> **Not tested yet on Windows ARM.** This build has been run on Windows 11 on an
+> ordinary x64 PC. It has not been tried on Windows on ARM (Snapdragon laptops,
+> Surface Pro X and the like). It may run through Windows' x64 emulation, but the
+> libusb DLL and the USB drivers below (libusbK, WinUSB) are the likeliest places for
+> it to go wrong there. If you try it, please tell us how it went.
 
 ---
 
@@ -98,11 +112,6 @@ The way round it, the one
 [beckmx](https://github.com/beckmx/lego-tower-rcx) worked out, is to bind the
 tower to **libusbK** with Zadig and talk to it from Python. So in this build:
 
-- **Visual block editor** (**File → Block editor…**): drag blocks instead of typing.
-  It is one offline HTML file beside the exe, opened in your browser and pinned to
-  NQC, since this edition carries `nqc` and not `nbc`. Save there, open the `.nqc`
-  here. Programs keep their blocks inside, so you can open them again and keep building.
-
 - **nqc.exe compiles** — that part is untouched and works perfectly.
 - **`rcx_tool.py` carries the program to the brick** over libusbK.
 
@@ -112,10 +121,58 @@ there is no `pip install` step.
 **With a serial tower none of this applies.** Type the port (`COM1`, say) into
 **Tower port** under Settings and the app uses `nqc` for everything, directly.
 
+## Drivers: which one, for which brick
+
+Only two things on this page need a driver, and they need **different** ones. Mixing
+them up is the usual way this goes wrong.
+
+| Device | USB ID | Driver it needs | What to do |
+|---|---|---|---|
+| **RCX / Scout USB tower** | `0694:0001` | **libusbK** | Run Zadig once, on the tower only (steps in [`driver/README-driver.txt`](package/BrickCodeStudio/driver/README-driver.txt)). |
+| **NXT** | `0694:0002` | **WinUSB** (or any libusb-compatible one) | Usually **nothing**: if NXT-G, NXT-Scratch, BricxCC or the LEGO software already works on the PC, the NXT already has what it needs. Leave it alone. |
+| **EV3** | — | none | It is programmed through the browser (Pybricks); this app never talks to it over USB. |
+| **Serial tower** | — | none | Type its `COM` port into **Tower port** under Settings. |
+
+Rules that keep Zadig from hurting:
+
+1. **Plug the device in first, run Zadig second.** Zadig only lists what is connected.
+2. **Run Zadig as administrator**, and tick **Options → List All Devices**.
+3. **Check the USB ID before pressing Install.** It must read `0694 0001` for the tower.
+   If it reads anything else, you are about to replace the driver of some other
+   device. Close Zadig.
+4. **One device at a time.** Never "Replace Driver" on the NXT if you also use NXT-G
+   or NXT-Scratch: they need the driver the NXT already has, and swapping it can
+   break them. This app does not ask you to.
+5. After Zadig says *installed successfully*, **unplug the tower and plug it in again**
+   (same port) before testing.
+
+### If something fails
+
+| What you see | Why | Fix |
+|---|---|---|
+| **Detect** finds no tower | The tower was plugged in after the app started, or Windows had not finished loading the driver | Plug it in, wait a few seconds, press **Detect** again. If it still does not show: unplug, replug in the same port, **Detect**. |
+| Zadig does not list the tower | **List All Devices** is off, or the tower is not connected | Tick it; unplug and replug the tower. |
+| Test brick says it cannot open the tower | The tower still has no libusbK | Repeat the Zadig steps; confirm `0694 0001` and **libusbK**. |
+| NXT: **`Operation not supported or implemented on this platform`** | Windows left the NXT's USB in a stale state, often after it was plugged in while another program held it | **Unplug the NXT and plug it back into the same port**, wait a few seconds, press the button again. Nothing is wrong with the driver. |
+| NXT works once, then stops answering | **NXT Explorer** or **NXT Screen** is still open and holds the USB | Close those windows; then try again. Only one thing can talk to the NXT at a time. |
+| NXT is not found at all | BricxCC, NXT-G or NXT-Scratch has it open | Close them. Check in Device Manager that it is not under *Other devices* with a yellow mark: that means it has no driver, and only then is Zadig (WinUSB) the answer. |
+| **Test tools** says `python: NOT found` | Python 3 is missing | Install it from the Microsoft Store. |
+| **Test tools** says `libusb-1.0.dll` or `pyusb` missing | The exe was moved out of its folder | Run it from inside `package\BrickCodeStudio`, with the files beside it. |
+| Zadig said *installed* but nothing changed | The device was not re-enumerated | Unplug and replug it; as a last resort, restart Windows. |
+| You want the tower back as it was | | Device Manager → uninstall the device with **Delete the driver software** ticked → replug. BricxCC and `nqc -Susb` will then see it again, and this app will need Zadig again. |
+
+A good order when anything is odd: close other LEGO programs → unplug → wait five
+seconds → plug in (same port) → press **Test tools**, then **Test brick**.
+
 ## The window
 
-**Top bar** — the file chip (click it for New / Open / Save / Save as / About),
-`+` for a new program, the `NQC · RCX / Scout` mode, the language, the brick status,
+**Bottom bar** — **HOME**, **CODE**, **BLOCKS** and **ABOUT**. HOME is where you pick
+the brick (RCX, Scout, NXT or EV3). BLOCKS opens a small menu asking which block
+editor you want: RCX / Scout (NQC), NXT (NXC) or EV3 (Pybricks). The other three
+parts below belong to CODE.
+
+**Top bar** — the file chip (click it for New / Open / Save / Save as / the block
+editors / Home / About), `+` for a new program, the `NQC · RCX / Scout` mode, the language, the brick status,
 and **Cancel**, **Download** and **Run (F5)**.
 
 **Left sidebar** — the RCX tower with its status dot, and the tools: Remote, Datalog,
@@ -129,6 +186,11 @@ is marked and scrolled into view.
 **Settings panel** — target (`-T`), program slot (`-pgm`), editor theme, the brick
 utilities, the tower port, auto-shutoff, and a free `nqc` argument box with
 up/down history.
+
+With the NXT picked, the editor writes NXC and the sidebar and panel switch to the NXT
+tools (Test brick, Stop program, NXT Explorer, NXT Screen):
+
+![NXT mode](docs/screenshot-nxt-en.png)
 
 | Light | Dark |
 |---|---|

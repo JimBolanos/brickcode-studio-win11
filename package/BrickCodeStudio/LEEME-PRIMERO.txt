@@ -33,6 +33,15 @@ QUE NECESITAS ANTES
      demas ya viene: nqc, los firmwares, las librerias y el driver.
 
 
+AUN NO PROBADO EN WINDOWS ARM
+-----------------------------
+
+  Esta version se ha usado en Windows 11 sobre un PC x64 normal. No se ha
+  probado en Windows para ARM (portatiles Snapdragon, Surface Pro X...).
+  Puede funcionar con la emulacion x64 de Windows, pero libusb-1.0.dll y
+  los drivers USB (libusbK, WinUSB) son lo mas probable que falle ahi.
+
+
 PASOS
 -----
 

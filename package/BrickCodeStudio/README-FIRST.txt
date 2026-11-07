@@ -39,6 +39,15 @@ BEFORE YOU START
      is here: nqc, the firmware files, the libraries and the driver.
 
 
+NOT TESTED YET ON WINDOWS ARM
+-----------------------------
+
+  This build has been run on Windows 11 on a normal x64 PC. It has not been
+  tried on Windows on ARM (Snapdragon laptops, Surface Pro X...). It may work
+  through Windows' x64 emulation, but libusb-1.0.dll and the USB drivers
+  (libusbK, WinUSB) are the likeliest trouble spots there.
+
+
 STEPS
 -----
 

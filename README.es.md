@@ -12,7 +12,9 @@ USB y el driver de la torre.
 > Continúa a [rcx-tower-gui](https://github.com/JimBolanos/rcx-tower-gui), la versión
 > anterior de la misma idea.
 
-![BrickCode Studio en Windows](docs/screenshot-nqc-en.png)
+![BrickCode Studio en Windows: elige el ladrillo](docs/screenshot-home-en.png)
+
+![La pantalla de código, escribiendo NQC para el RCX](docs/screenshot-nqc-en.png)
 
 ¿Prefieres arrastrar bloques a escribir? **Archivo → Editor de bloques…** lo abre en
 tu navegador. Escribe el NQC por ti, y en esta edición viene fijado a NQC: el paquete
@@ -20,6 +22,18 @@ trae `nqc` y no `nbc`, así que ofrecer NXC aquí solo serviría para armar prog
 esta app no puede compilar.
 
 ![El editor visual de bloques, escribiendo NQC](docs/screenshot-blocks-en.png)
+
+El botón **BLOQUES** de la barra inferior primero pregunta qué editor quieres:
+
+![El menú BLOQUES](docs/screenshot-blocks-menu-en.png)
+
+---
+
+> **Aún no probado en Windows ARM.** Esta versión se ha usado en Windows 11 sobre un PC
+> x64 normal. No se ha probado en Windows para ARM (portátiles Snapdragon, Surface
+> Pro X y similares). Puede que funcione con la emulación x64 de Windows, pero la DLL
+> de libusb y los drivers USB de abajo (libusbK, WinUSB) son lo más probable que
+> falle ahí. Si lo pruebas, cuéntanos cómo te fue.
 
 ---
 
@@ -99,12 +113,6 @@ La salida, la que encontró [beckmx](https://github.com/beckmx/lego-tower-rcx), 
 asignarle a la torre el driver **libusbK** con Zadig y hablarle desde Python. Por eso
 en esta versión:
 
-- **Editor visual de bloques** (**Archivo → Editor de bloques…**): arrastra bloques
-  en lugar de escribir. Es un solo archivo HTML, sin internet, que vive junto al exe,
-  se abre en tu navegador y viene fijado a NQC, porque esta edición trae `nqc` y no
-  `nbc`. Guardas ahí, abres el `.nqc` aquí. Los programas llevan sus bloques dentro,
-  así que puedes volver a abrirlos y seguir armando.
-
 - **nqc.exe compila** — esa parte está intacta y funciona perfecto.
 - **`rcx_tool.py` lleva el programa al ladrillo** a través de libusbK.
 
@@ -114,10 +122,58 @@ incluido, así que no hay que hacer `pip install`.
 **Con torre serial nada de esto aplica.** Escribe el puerto (`COM1`, por ejemplo) en
 **Puerto de la torre** dentro de Ajustes y la app usa `nqc` para todo, directamente.
 
+## Drivers: cuál, para qué ladrillo
+
+Solo dos cosas de esta página necesitan driver, y necesitan drivers **distintos**.
+Confundirlos es la forma habitual de que algo salga mal.
+
+| Dispositivo | ID USB | Driver que necesita | Qué hacer |
+|---|---|---|---|
+| **Torre USB del RCX / Scout** | `0694:0001` | **libusbK** | Corre Zadig una vez, solo sobre la torre (pasos en [`driver/LEEME-driver.txt`](package/BrickCodeStudio/driver/LEEME-driver.txt)). |
+| **NXT** | `0694:0002` | **WinUSB** (o cualquiera compatible con libusb) | Normalmente **nada**: si NXT-G, NXT-Scratch, BricxCC o el software de LEGO ya funcionan en el PC, el NXT ya tiene lo que necesita. Déjalo tal cual. |
+| **EV3** | — | ninguno | Se programa desde el navegador (Pybricks); esta app nunca le habla por USB. |
+| **Torre serial** | — | ninguno | Escribe su puerto `COM` en **Puerto de la torre** dentro de Ajustes. |
+
+Reglas para que Zadig no haga daño:
+
+1. **Conecta el dispositivo primero, abre Zadig después.** Zadig solo lista lo que está conectado.
+2. **Ejecuta Zadig como administrador** y marca **Options → List All Devices**.
+3. **Mira el ID USB antes de pulsar Install.** Para la torre debe decir `0694 0001`.
+   Si dice otra cosa, vas a reemplazar el driver de otro dispositivo. Cierra Zadig.
+4. **Un dispositivo a la vez.** Nunca pongas "Replace Driver" al NXT si también usas
+   NXT-G o NXT-Scratch: necesitan el driver que el NXT ya tiene, y cambiarlo puede
+   romperlos. Esta app no te lo pide.
+5. Cuando Zadig diga *instalado correctamente*, **desconecta la torre y vuelve a
+   conectarla** (en el mismo puerto) antes de probar.
+
+### Si algo falla
+
+| Lo que ves | Por qué | Solución |
+|---|---|---|
+| **Detectar** no encuentra la torre | Se conectó después de abrir la app, o Windows no terminó de cargar el driver | Conéctala, espera unos segundos y pulsa **Detectar** otra vez. Si sigue sin salir: desconecta, vuelve a conectar en el mismo puerto y **Detectar**. |
+| Zadig no lista la torre | **List All Devices** está apagado, o la torre no está conectada | Márcalo; desconecta y reconecta la torre. |
+| Probar ladrillo dice que no puede abrir la torre | La torre aún no tiene libusbK | Repite los pasos de Zadig; confirma `0694 0001` y **libusbK**. |
+| NXT: **`Operation not supported or implemented on this platform`** | Windows dejó el USB del NXT en un estado viejo, a menudo por conectarlo mientras otro programa lo tenía abierto | **Desconecta el NXT y vuelve a conectarlo en el mismo puerto**, espera unos segundos y pulsa el botón otra vez. El driver no tiene nada malo. |
+| El NXT funciona una vez y luego no responde | **Explorador NXT** o **Pantalla NXT** siguen abiertos y retienen el USB | Cierra esas ventanas y prueba de nuevo. Solo una cosa puede hablar con el NXT a la vez. |
+| El NXT no aparece | BricxCC, NXT-G o NXT-Scratch lo tienen abierto | Ciérralos. En el Administrador de dispositivos comprueba que no esté en *Otros dispositivos* con una marca amarilla: eso significa que no tiene driver, y solo entonces la respuesta es Zadig (WinUSB). |
+| **Probar herramientas** dice `python: NO se encontró` | Falta Python 3 | Instálalo desde la Microsoft Store. |
+| **Probar herramientas** dice que falta `libusb-1.0.dll` o `pyusb` | El exe se movió fuera de su carpeta | Ábrelo desde dentro de `package\BrickCodeStudio`, con los archivos a su lado. |
+| Zadig dijo *instalado* pero nada cambió | El dispositivo no se re-enumeró | Desconéctalo y vuelve a conectarlo; como último recurso, reinicia Windows. |
+| Quieres devolver la torre a como estaba | | Administrador de dispositivos → desinstalar el dispositivo con **Eliminar el software de controlador** marcado → reconectar. BricxCC y `nqc -Susb` la volverán a ver, y esta app volverá a necesitar Zadig. |
+
+Un buen orden cuando algo raro pasa: cierra los otros programas de LEGO → desconecta →
+espera cinco segundos → conecta (mismo puerto) → pulsa **Probar herramientas** y luego
+**Probar ladrillo**.
+
 ## La ventana
 
+**Barra inferior** — **INICIO**, **CÓDIGO**, **BLOQUES** y **ACERCA DE**. INICIO es
+donde eliges el ladrillo (RCX, Scout, NXT o EV3). BLOQUES abre un menú pequeño para
+elegir el editor de bloques: RCX / Scout (NQC), NXT (NXC) o EV3 (Pybricks). Las demás
+partes de abajo pertenecen a CÓDIGO.
+
 **Barra superior** — la ficha del archivo (haz clic para Nuevo / Abrir / Guardar /
-Guardar como / Acerca de), `+` para un programa nuevo, el modo `NQC · RCX / Scout`,
+Guardar como / los editores de bloques / Inicio / Acerca de), `+` para un programa nuevo, el modo `NQC · RCX / Scout`,
 el idioma, el estado del ladrillo, y **Cancelar**, **Descargar** y **Ejecutar (F5)**.
 
 **Barra lateral** — la torre RCX con su punto de estado, y las herramientas: Control
@@ -132,6 +188,11 @@ línea queda marcada y el editor se desplaza hasta ella.
 **Panel de ajustes** — modelo (`-T`), ranura de programa (`-pgm`), tema del editor,
 las utilidades del ladrillo, el puerto de la torre, el apagado automático, y una caja
 de argumentos libres para `nqc` con historial con las flechas arriba/abajo.
+
+Con el NXT elegido, el editor escribe NXC y la barra lateral y el panel cambian a las
+herramientas del NXT (Probar ladrillo, Detener programa, Explorador NXT, Pantalla NXT):
+
+![Modo NXT](docs/screenshot-nxt-en.png)
 
 | Claro | Oscuro |
 |---|---|

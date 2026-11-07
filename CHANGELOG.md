@@ -6,6 +6,10 @@ RCX Tower GUI. They are kept here for the record.
 
 ## Unreleased — NXT and EV3
 
+- **README brought up to date.** New screenshots of the current interface (home, code,
+  NXT mode, the BLOCKS menu, About), a section on which driver each device needs (libusbK
+  for the RCX tower, WinUSB for the NXT, none for the EV3), a table of what to do when
+  detection or the USB fails, and a note that it is not tested on Windows ARM yet.
 - **Menus as bubbles.** The BLOCKS menu in the bottom bar and the File menu now follow the
   Mac / Linux style: a dark rounded card with a thin border and rounded rows that light up
   softly on hover. The BLOCKS bubble opens centred above its button.

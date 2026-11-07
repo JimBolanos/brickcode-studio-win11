@@ -29,6 +29,8 @@ RCX Tower GUI. They are kept here for the record.
   ABOUT; and an **ABOUT screen** (what it uses, documentation, links, legal). The app now
   opens on HOME. **BLOCKS** opens a small menu to choose the block editor (RCX / Scout, NXT or
   EV3) instead of guessing from the current mode.
+- `build.bat` puts a **BrickCode Studio shortcut on the desktop** (`make-shortcut.ps1`), pointing at
+  `package\BrickCodeStudio\BrickCodeStudio.exe`; if it cannot be made the build still succeeds.
 - `test-nxt.bat` tests the whole NXT chain without the GUI.
 - `nbc.exe` bundled (MPL 1.1, unchanged); the NXT-only block page is no longer left out.
 

@@ -56,10 +56,21 @@ if exist package\BrickCodeStudio (
   echo   Refreshed: package\BrickCodeStudio\BrickCodeStudio.exe
 )
 
+rem ---------------------------------------------------------------------------
+rem  A shortcut on the desktop, pointing at the ready-to-run folder. If it
+rem  cannot be made the build is still good, so this never stops the script.
+rem ---------------------------------------------------------------------------
+if exist package\BrickCodeStudio\BrickCodeStudio.exe (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0make-shortcut.ps1" -Target "%~dp0package\BrickCodeStudio\BrickCodeStudio.exe"
+)
+
 echo.
 echo   Done: dist\BrickCodeStudio.exe
 echo.
-echo   Put nqc.exe next to it, or anywhere on your PATH.
+echo   Run it from the "BrickCode Studio" shortcut on the desktop, or open
+echo   package\BrickCodeStudio\BrickCodeStudio.exe (nqc, nbc and the tools are
+echo   already in that folder). Keep that folder where it is: the shortcut
+echo   points at it.
 echo.
 echo   To build the zip for a release, run:  package.bat
 echo.

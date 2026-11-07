@@ -349,6 +349,7 @@ namespace BrickCode
         readonly List<Row> chips = new List<Row>();
         int hover = -1;
         List<Row> all = new List<Row>();
+        int scrollY, contentH;       // a short window scrolls instead of cutting the page off
 
         const string Guide = "https://github.com/JimBolanos/brickcode-studio-apple-linux/blob/main/docs/USER_GUIDE.en.md";
         const string GuideEs = "https://github.com/JimBolanos/brickcode-studio-apple-linux/blob/main/docs/USER_GUIDE.es.md";
@@ -410,8 +411,23 @@ namespace BrickCode
 
         int HitTest(Point p)
         {
+            p = new Point(p.X, p.Y + scrollY);
             for (int i = 0; i < all.Count; i++) if (all[i].Box.Contains(p)) return i;
             return -1;
+        }
+
+        protected override void OnMouseWheel(MouseEventArgs e)
+        {
+            base.OnMouseWheel(e);
+            int max = Math.Max(0, contentH - Height);
+            int ny = Math.Max(0, Math.Min(max, scrollY - e.Delta / 2));
+            if (ny != scrollY) { scrollY = ny; Invalidate(); }
+        }
+
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            Focus();                    // so the wheel reaches this page
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
@@ -456,25 +472,36 @@ namespace BrickCode
             using (SolidBrush b = new SolidBrush(Ui.P.Bg))
                 g.FillRectangle(b, ClientRectangle);
 
+            // Row height gives way first when the window is short; then it scrolls.
+            int margin = 22, gap = 16, top = 64;
+            int rowH = 56;
+            int avail = Height - top - 20;
+            int need = 44 + docs.Count * (rowH + 8) + gap + 132;
+            if (need > avail)
+                rowH = Math.Max(46, rowH - (need - avail) / docs.Count);
+            int maxScroll = Math.Max(0, contentH - Height);
+            if (scrollY > maxScroll) scrollY = maxScroll;
+            g.TranslateTransform(0, -scrollY);
+
             using (Font word = new Font("Segoe UI", 17f, FontStyle.Bold))
             {
                 int tw = Dr.MeasureWidth(g, "BrickCode Studio", word) + 16 * 3;
                 DrawSpaced(g, "BrickCode Studio", word, Ui.P.Fg, (Width - tw) / 2, 14, 3f);
             }
 
-            int margin = 22, gap = 16, top = 64;
             int total = Width - margin * 2 - gap * 2;
-            int wl = (int)(total * 0.29), wr = (int)(total * 0.26), wm = total - wl - wr;
+            int wl = Math.Max(300, (int)(total * 0.29)), wr = Math.Max(260, (int)(total * 0.26)), wm = total - wl - wr;
             int xl = margin, xm = xl + wl + gap, xr = xm + wm + gap;
             Color accent = Color.FromArgb(193, 0, 133);
 
             // --- left: version, what it uses ---
-            Rectangle c1 = new Rectangle(xl, top, wl, 130);
+            string intro = T("Write NQC for the RCX and Scout, or NXC for the NXT, press F5, and the program compiles, downloads and runs on the brick.");
+            int introH = TextH(g, intro, Ui.F(8.75f), wl - 40);
+            Rectangle c1 = new Rectangle(xl, top, wl, 80 + introH + 16);
             Card(g, c1);
             Dr.TextLeft(g, T("VERSION") + " " + App.Version, Ui.B(8.5f), accent, new Rectangle(c1.X + 20, c1.Y + 18, c1.Width - 40, 18));
             Dr.TextLeft(g, T("NQC + NXC editor"), Ui.B(13f), Ui.P.Fg, new Rectangle(c1.X + 20, c1.Y + 40, c1.Width - 40, 28));
-            DrawWrapped(g, T("Write NQC for the RCX and Scout, or NXC for the NXT, press F5, and the program compiles, downloads and runs on the brick."),
-                        Ui.F(8.75f), Ui.P.Muted, new Rectangle(c1.X + 20, c1.Y + 72, c1.Width - 40, 52));
+            DrawWrapped(g, intro, Ui.F(8.75f), Ui.P.Muted, new Rectangle(c1.X + 20, c1.Y + 72, c1.Width - 40, introH + 4));
 
             string[,] uses =
             {
@@ -491,12 +518,12 @@ namespace BrickCode
             for (int i = 0; i < uses.GetLength(0); i++)
             {
                 int ry = c2.Y + 40 + i * 26;
-                Dr.TextLeft(g, uses[i, 0], Ui.F(8.75f), Ui.P.Muted, new Rectangle(c2.X + 20, ry, 110, 22));
-                Dr.TextRight(g, uses[i, 1], Ui.B(8.5f), Ui.P.Fg, new Rectangle(c2.X + 110, ry, c2.Width - 130, 22));
+                int lw = Dr.MeasureWidth(g, uses[i, 0], Ui.F(8.75f)) + 10;
+                Dr.TextLeft(g, uses[i, 0], Ui.F(8.75f), Ui.P.Muted, new Rectangle(c2.X + 20, ry, lw, 22));
+                Dr.TextRight(g, uses[i, 1], Ui.B(8.5f), Ui.P.Fg, new Rectangle(c2.X + 20 + lw, ry, c2.Width - 40 - lw, 22));
             }
 
             // --- middle: documentation, author ---
-            int rowH = 56;
             Rectangle c3 = new Rectangle(xm, top, wm, 44 + docs.Count * (rowH + 8));
             Card(g, c3);
             Dr.TextLeft(g, T("Documentation"), Ui.B(8.25f), Ui.P.Muted, new Rectangle(c3.X + 20, c3.Y + 14, c3.Width - 40, 18));
@@ -507,25 +534,27 @@ namespace BrickCode
                 bool hot = hover == i;
                 Dr.Fill(g, r.Box, 10, hot ? Ui.P.Hover(Ui.P.Field, 0.08) : Ui.P.Field);
                 Dr.Dot(g, r.Box.X + 22, r.Box.Y + rowH / 2, 12, r.Dot);
-                Dr.TextLeft(g, T(r.Title), Ui.B(9.5f), Ui.P.Fg, new Rectangle(r.Box.X + 42, r.Box.Y + 8, r.Box.Width - 80, 20));
-                Dr.TextLeft(g, T(r.Desc), Ui.F(8.25f), Ui.P.Muted, new Rectangle(r.Box.X + 42, r.Box.Y + 28, r.Box.Width - 80, 20));
+                int ty = (rowH - 40) / 2;
+                Dr.TextLeft(g, T(r.Title), Ui.B(9.5f), Ui.P.Fg, new Rectangle(r.Box.X + 42, r.Box.Y + ty, r.Box.Width - 80, 20));
+                Dr.TextLeft(g, T(r.Desc), Ui.F(8.25f), Ui.P.Muted, new Rectangle(r.Box.X + 42, r.Box.Y + ty + 20, r.Box.Width - 80, 20));
                 Dr.TextRight(g, "›", Ui.F(13f), Ui.P.Muted, new Rectangle(r.Box.Right - 36, r.Box.Y, 26, rowH));
             }
 
-            Rectangle c4 = new Rectangle(xm, c3.Bottom + gap, wm, 132);
+            string about = T("Builds and programs LEGO robots as a hobby — RCX, Scout, NXT and Powered Up hubs. Made BrickCode Studio so these classic bricks keep running on modern computers.");
+            int aboutH = TextH(g, about, Ui.F(8.25f), wm - 120);
+            Rectangle c4 = new Rectangle(xm, c3.Bottom + gap, wm, Math.Max(112, 44 + aboutH + 8 + 22 + 16));
             Card(g, c4);
             using (SolidBrush ab = new SolidBrush(accent))
                 g.FillEllipse(ab, c4.X + 22, c4.Y + 24, 62, 62);
             Dr.TextCenter(g, "JB", Ui.B(15f), Color.White, new Rectangle(c4.X + 22, c4.Y + 24, 62, 62));
             Dr.TextLeft(g, "Jim Bolaños", Ui.B(12.5f), Ui.P.Fg, new Rectangle(c4.X + 100, c4.Y + 14, c4.Width - 120, 24));
-            DrawWrapped(g, T("Builds and programs LEGO robots as a hobby — RCX, Scout, NXT and Powered Up hubs. Made BrickCode Studio so these classic bricks keep running on modern computers."),
-                        Ui.F(8.25f), Ui.P.Muted, new Rectangle(c4.X + 100, c4.Y + 40, c4.Width - 120, 52));
+            DrawWrapped(g, about, Ui.F(8.25f), Ui.P.Muted, new Rectangle(c4.X + 100, c4.Y + 40, c4.Width - 120, aboutH + 4));
             int cx = c4.X + 100;
             for (int i = 0; i < chips.Count; i++)
             {
                 Row r = chips[i];
                 int w = Dr.MeasureWidth(g, r.Title, Ui.B(8f)) + 22;
-                r.Box = new Rectangle(cx, c4.Bottom - 30, w, 22);
+                r.Box = new Rectangle(cx, c4.Y + 44 + aboutH + 8, w, 22);
                 Dr.Fill(g, r.Box, 8, hover == docs.Count + links.Count + i ? Ui.P.Hover(Ui.P.Field, 0.1) : Ui.P.Field);
                 Dr.TextCenter(g, r.Title, Ui.B(8f), Ui.P.Fg, r.Box);
                 cx += w + 8;
@@ -547,15 +576,23 @@ namespace BrickCode
                 Dr.TextRight(g, "↗", Ui.F(10f), Ui.P.Muted, new Rectangle(r.Box.Right - 30, r.Box.Y, 22, r.Box.Height));
             }
 
-            Rectangle c6 = new Rectangle(xr, c5.Bottom + gap, wr, 168);
+            string credits = "Blockly 13.4.0, Apache 2.0.\nnqc by Dave Baum · nbc by John Hansen.";
+            string notice = T("Not affiliated with or endorsed by the LEGO Group. LEGO, MINDSTORMS, RCX, Scout and NXT are trademarks of the LEGO Group.");
+            int credH = TextH(g, credits, Ui.F(8.25f), wr - 40), noteH = TextH(g, notice, Ui.F(7.5f), wr - 40);
+            Rectangle c6 = new Rectangle(xr, c5.Bottom + gap, wr, 80 + credH + 10 + noteH + 16);
             Card(g, c6);
             Dr.TextLeft(g, T("Legal"), Ui.B(8.25f), Ui.P.Muted, new Rectangle(c6.X + 20, c6.Y + 14, c6.Width - 40, 18));
             Dr.TextLeft(g, "MIT License", Ui.B(8.75f), Ui.P.Fg, new Rectangle(c6.X + 20, c6.Y + 38, c6.Width - 40, 16));
             Dr.TextLeft(g, "© 2026 Jim Bolaños", Ui.B(8.75f), Ui.P.Fg, new Rectangle(c6.X + 20, c6.Y + 55, c6.Width - 40, 16));
-            DrawWrapped(g, "Blockly 13.4.0, Apache 2.0.\nnqc by Dave Baum · nbc by John Hansen.", Ui.F(8.25f), Ui.P.Muted,
-                        new Rectangle(c6.X + 20, c6.Y + 80, c6.Width - 40, 34));
-            DrawWrapped(g, T("Not affiliated with or endorsed by the LEGO Group. LEGO, MINDSTORMS, RCX, Scout and NXT are trademarks of the LEGO Group."),
-                        Ui.F(7.5f), Ui.P.Muted, new Rectangle(c6.X + 20, c6.Y + 118, c6.Width - 40, 44));
+            DrawWrapped(g, credits, Ui.F(8.25f), Ui.P.Muted, new Rectangle(c6.X + 20, c6.Y + 80, c6.Width - 40, credH + 4));
+            DrawWrapped(g, notice, Ui.F(7.5f), Ui.P.Muted, new Rectangle(c6.X + 20, c6.Y + 80 + credH + 10, c6.Width - 40, noteH + 4));
+
+            contentH = Math.Max(Math.Max(c4.Bottom, c6.Bottom), c2.Bottom) + 20;
+        }
+
+        static int TextH(Graphics g, string s, Font f, int width)
+        {
+            return (int)Math.Ceiling(g.MeasureString(s, f, Math.Max(20, width)).Height);
         }
 
         static void DrawWrapped(Graphics g, string s, Font f, Color c, Rectangle r)

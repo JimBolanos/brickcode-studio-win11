@@ -133,8 +133,11 @@ namespace BrickCode
         {
             SuspendLayout();
             Text = App.Name;
-            ClientSize = new Size(1280, 800);
-            MinimumSize = new Size(1000, 660);
+            // 1280 x 800, unless the screen is smaller (a 1366 x 768 laptop):
+            // a window taller than the desktop loses its bottom edge.
+            Rectangle wa = Screen.PrimaryScreen.WorkingArea;
+            ClientSize = new Size(Math.Min(1280, wa.Width - 20), Math.Min(800, wa.Height - 50));
+            MinimumSize = new Size(1000, 600);
             StartPosition = FormStartPosition.CenterScreen;
             KeyPreview = true;
             Icon = BrickIcon.WindowIcon();

@@ -1,0 +1,11 @@
+// BrickCode Studio - NXT hello test
+task main()
+{
+  ClearScreen();
+  TextOut(10, LCD_LINE4, "Hello from");
+  TextOut(10, LCD_LINE5, "Windows!");
+  PlayTone(880, 300);
+  Wait(300);
+  PlayTone(1320, 300);
+  Wait(3000);
+}

@@ -345,6 +345,69 @@ namespace BrickCode
         }
     }
 
+    /// The bubble the Mac / Linux edition uses for its menus: a dark rounded
+    /// card with a thin border, and rounded rows that light up softly on hover
+    /// rather than filling with the accent colour.
+    class BubbleRenderer : ToolStripProfessionalRenderer
+    {
+        public const int Radius = 16;
+
+        public BubbleRenderer() : base(new MenuColors()) { }
+
+        /// Style a menu as a bubble. Call before Show.
+        public static void Apply(ContextMenuStrip m)
+        {
+            m.Renderer = new BubbleRenderer();
+            m.BackColor = Ui.P.Card;
+            m.ForeColor = Ui.P.Fg;
+            m.ShowImageMargin = false;
+            m.Padding = new Padding(7, 7, 7, 7);
+            m.Opened += delegate
+            {
+                using (GraphicsPath gp = Dr.Round(new Rectangle(0, 0, m.Width, m.Height), Radius))
+                    m.Region = new Region(gp);
+            };
+        }
+
+        protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e)
+        {
+            e.Graphics.Clear(Ui.P.Card);
+        }
+
+        protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            Dr.Quality(g);
+            Rectangle r = new Rectangle(0, 0, e.ToolStrip.Width, e.ToolStrip.Height);
+            Dr.Border(g, r, Radius, Ui.P.Border);
+        }
+
+        protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
+        {
+            if (!e.Item.Selected || !e.Item.Enabled) return;
+            Graphics g = e.Graphics;
+            Dr.Quality(g);
+            Rectangle r = new Rectangle(0, 0, e.Item.Width - 1, e.Item.Height - 1);
+            Dr.Fill(g, r, 11, Ui.P.Field);
+        }
+
+        protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
+        {
+            e.TextColor = Ui.P.Fg;
+            Rectangle r = e.TextRectangle;
+            r.X += 6;   // a little air from the rounded edge
+            e.TextRectangle = r;
+            base.OnRenderItemText(e);
+        }
+
+        protected override void OnRenderSeparator(ToolStripSeparatorRenderEventArgs e)
+        {
+            int y = e.Item.Height / 2;
+            using (Pen p = new Pen(Ui.P.Border))
+                e.Graphics.DrawLine(p, 8, y, e.Item.Width - 8, y);
+        }
+    }
+
     class MenuColors : ProfessionalColorTable
     {
         public override Color ToolStripDropDownBackground { get { return Ui.P.Card; } }

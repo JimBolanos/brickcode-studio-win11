@@ -563,11 +563,8 @@ namespace BrickCode
         void ShowFileMenu()
         {
             ContextMenuStrip m = new ContextMenuStrip();
-            m.Renderer = new MenuRenderer();
-            m.BackColor = Ui.P.Card;
-            m.ForeColor = Ui.P.Fg;
+            BubbleRenderer.Apply(m);
             m.Font = Ui.F(9.75f);
-            m.ShowImageMargin = false;
             AddItem(m, I18n.T("New"), delegate { NewFile(); });
             AddItem(m, I18n.T("Open…"), delegate { OpenFile(); });
             AddItem(m, I18n.T("Save"), delegate { Save(false); });
@@ -629,17 +626,14 @@ namespace BrickCode
         void ChooseBlocks()
         {
             ContextMenuStrip menu = new ContextMenuStrip();
-            menu.Renderer = new MenuRenderer();
-            menu.BackColor = Ui.P.Card;
-            menu.ForeColor = Ui.P.Fg;
+            BubbleRenderer.Apply(menu);
             menu.Font = Ui.F(10f);
-            menu.ShowImageMargin = false;
             AddItem(menu, I18n.T("RCX / Scout  —  NQC blocks"), delegate { OpenBlockEditorFor(false); });
             AddItem(menu, I18n.T("NXT  —  NXC blocks"), delegate { OpenBlockEditorFor(true); });
             AddItem(menu, I18n.T("EV3  —  Pybricks (Python) blocks"), delegate { OpenPybricksEditor(); });
             Rectangle box = nav.BoxOf("blocks");
             Size sz = menu.GetPreferredSize(Size.Empty);
-            menu.Show(nav, new Point(box.X, box.Y - sz.Height - 4));
+            menu.Show(nav, new Point(box.X + box.Width / 2 - sz.Width / 2, box.Y - sz.Height - 6));
         }
 
         void BrickPicked(string id)
@@ -684,6 +678,7 @@ namespace BrickCode
         {
             ToolStripMenuItem mi = new ToolStripMenuItem(text);
             mi.ForeColor = Ui.P.Fg;
+            mi.Padding = new Padding(8, 6, 14, 6);   // roomy rows, as in the bubble
             mi.Click += h;
             m.Items.Add(mi);
         }

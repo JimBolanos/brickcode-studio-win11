@@ -6,6 +6,9 @@ RCX Tower GUI. They are kept here for the record.
 
 ## Unreleased — NXT and EV3
 
+- **Menus as bubbles.** The BLOCKS menu in the bottom bar and the File menu now follow the
+  Mac / Linux style: a dark rounded card with a thin border and rounded rows that light up
+  softly on hover. The BLOCKS bubble opens centred above its button.
 - **NXT mode.** Pick NXT as the brick: the editor switches to NXC, F5 compiles with the
   bundled `nbc.exe` and sends over USB with `nxt_tool.py` (LCP, pyusb + libusb-1.0).
   Test brick, Stop and Run work on the NXT; compiler errors are parsed and the line is

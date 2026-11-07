@@ -206,6 +206,7 @@ namespace BrickCode
             A("Firmware sent.", "Firmware enviado.");
             A("Sending firmware…", "Enviando firmware…");
             A("About", "Acerca de");
+            A("NXC for the NXT  ·  compiled by nbc, sent over USB", "NXC para el NXT  ·  compilado por nbc, enviado por USB");
             A("RCX / Scout  —  NQC blocks", "RCX / Scout  —  bloques NQC");
             A("NXT  —  NXC blocks", "NXT  —  bloques NXC");
             A("EV3  —  Pybricks (Python) blocks", "EV3  —  bloques Pybricks (Python)");

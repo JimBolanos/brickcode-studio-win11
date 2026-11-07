@@ -78,6 +78,12 @@ namespace BrickCode
         readonly CodeEditor editor = new CodeEditor();
         readonly SplitHandle splitter = new SplitHandle();
         readonly ConsolePanel console = new ConsolePanel();
+        // HOME and ABOUT are screens of their own; CODE is the editor with its side bar.
+        readonly NavBar nav = new NavBar();
+        readonly HomePage home = new HomePage();
+        readonly AboutPage aboutPage = new AboutPage();
+        string screen = "home";
+
         readonly FlatButton railGear = new FlatButton();
         readonly FlatButton railTerm = new FlatButton();
         readonly SettingsPanel settings = new SettingsPanel();
@@ -210,6 +216,12 @@ namespace BrickCode
 
             Controls.Add(railGear);
             Controls.Add(railTerm);
+            Controls.Add(home);
+            Controls.Add(aboutPage);
+            Controls.Add(nav);
+            nav.Picked += delegate(object s, SideEventArgs e) { NavClicked(e.Id); };
+            home.Picked += delegate(object s, SideEventArgs e) { BrickPicked(e.Id); };
+            aboutPage.Action += delegate(object s, SideEventArgs e) { NavClicked(e.Id); };
             railGear.Glyph = "⚙";
             railGear.GlyphFont = Ui.Sym(13f);
             railGear.Radius = 12;
@@ -311,6 +323,10 @@ namespace BrickCode
             railTerm.FgColor = Ui.P.Muted;
             railTerm.BorderColor = Ui.P.Border;
 
+            nav.Labels = new string[] { I18n.T("HOME"), I18n.T("CODE"), I18n.T("BLOCKS"), I18n.T("ABOUT") };
+            nav.Invalidate();
+            home.Invalidate();
+            aboutPage.Refresh2();
             side.BricksTitle = I18n.T("Bricks");
             side.ToolsTitle = I18n.T("Tools");
             side.Bricks[0].Label = I18n.T("RCX tower");
@@ -444,15 +460,37 @@ namespace BrickCode
         {
             if (ClientSize.Width < 50 || ClientSize.Height < 50) return;
             int W = ClientSize.Width, H = ClientSize.Height;
-            const int tbH = 60, sbW = 210, stH = 30, pad = 10, railW = 64, setW = 412;
+            const int tbH = 60, sbW = 210, stH = 30, pad = 10, railW = 64, setW = 412, navH = 76;
+
+            status.SetBounds(0, H - stH, W, stH);
+            nav.SetBounds(0, H - stH - navH, W, navH);
+            int bottom = H - stH - navH;
+
+            // HOME and ABOUT fill the whole window above the navigation.
+            bool code = screen == "code";
+            home.Visible = screen == "home";
+            aboutPage.Visible = screen == "about";
+            tb.Visible = code;
+            side.Visible = code;
+            editorCard.Visible = code;
+            railGear.Visible = code;
+            railTerm.Visible = code;
+            if (!code)
+            {
+                settings.Visible = false;
+                splitter.Visible = false;
+                console.Visible = false;
+                home.SetBounds(0, 0, W, bottom);
+                aboutPage.SetBounds(0, 0, W, bottom);
+                return;
+            }
 
             tb.SetBounds(0, 0, W, tbH);
-            side.SetBounds(0, tbH, sbW, H - tbH - stH);
-            status.SetBounds(0, H - stH, W, stH);
+            side.SetBounds(0, tbH, sbW, bottom - tbH);
 
             LayoutToolbar(W, tbH);
 
-            int cy0 = tbH, cy1 = H - stH;
+            int cy0 = tbH, cy1 = bottom;
             int sx = W;
             if (settingsVisible)
             {
@@ -536,7 +574,8 @@ namespace BrickCode
                     delegate { OpenBlockEditor(); });
             AddItem(m, I18n.T("Pybricks block editor (EV3)…"), delegate { OpenPybricksEditor(); });
             m.Items.Add(new ToolStripSeparator());
-            AddItem(m, I18n.T("About"), delegate { new AboutForm(this).ShowDialog(this); });
+            AddItem(m, I18n.T("Home"), delegate { ShowScreen("home"); });
+            AddItem(m, I18n.T("About"), delegate { ShowScreen("about"); });
             m.Show(chip, new Point(0, chip.Height + 2));
         }
 
@@ -554,9 +593,52 @@ namespace BrickCode
            everything after the "#" on the way. */
         void OpenBlockEditor()
         {
-            OpenPage(IsNxt ? "brickcode-blocks-nxt.html" : "brickcode-blocks.html",
+            OpenBlockEditorFor(IsNxt);
+        }
+
+        void OpenBlockEditorFor(bool nxt)
+        {
+            OpenPage(nxt ? "brickcode-blocks-nxt.html" : "brickcode-blocks.html",
                      "Block editor opened in your browser. Build the program "
                      + "there, press Save, then open the file here.");
+        }
+
+        // -------------------------------------------------------------------
+        // Screens: HOME, CODE, BLOCKS (a chooser), ABOUT
+        // -------------------------------------------------------------------
+        void ShowScreen(string id)
+        {
+            screen = id;
+            nav.Active = id;
+            Relayout();
+            nav.Invalidate();
+            Invalidate(true);
+        }
+
+        void NavClicked(string id)
+        {
+            if (id == "blocks") { ChooseBlocks(); return; }
+            ShowScreen(id);
+        }
+
+        /// BLOCKS is a door, not a room: a window asks which editor, then it
+        /// opens in the browser and you stay where you were.
+        void ChooseBlocks()
+        {
+            using (BlocksPicker d = new BlocksPicker())
+            {
+                if (d.ShowDialog(this) != DialogResult.OK) return;
+                if (d.Choice == "ev3") OpenPybricksEditor();
+                else OpenBlockEditorFor(d.Choice == "nxt");
+            }
+        }
+
+        void BrickPicked(string id)
+        {
+            if (id == "ev3") { OpenPybricksEditor(); return; }
+            string target = id == "nxt" ? "NXT" : (id == "scout" ? "Scout" : "RCX2");
+            SelectTarget(target);
+            ShowScreen("code");
         }
 
         /// The EV3 editor only writes Python: the .py goes to the brick with

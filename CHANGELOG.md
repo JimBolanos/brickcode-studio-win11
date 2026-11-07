@@ -24,6 +24,11 @@ RCX Tower GUI. They are kept here for the record.
   checks the brick at once.
 - Files are saved **without a BOM**: nbc rejected it (`';' expected` on line 3).
 - A USB error "operation not supported" now says to unplug and replug the NXT.
+- **HOME screen** with one card per brick (RCX, Scout, NXT, EV3), the four bricks drawn
+  from the Apple / Linux edition's drawings; the **bottom navigation** HOME / CODE / BLOCKS /
+  ABOUT; and an **ABOUT screen** (what it uses, documentation, links, legal). The app now
+  opens on HOME. **BLOCKS** opens a window to choose the block editor (RCX / Scout, NXT or
+  EV3) instead of guessing from the current mode.
 - `test-nxt.bat` tests the whole NXT chain without the GUI.
 - `nbc.exe` bundled (MPL 1.1, unchanged); the NXT-only block page is no longer left out.
 
